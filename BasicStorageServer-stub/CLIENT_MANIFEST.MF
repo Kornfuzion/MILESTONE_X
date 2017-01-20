@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.9.4
+Created-By: 1.7.0_111-b01 (Oracle Corporation)
+built-by: elliot88
+Main-Class: app_kvClient.KVClient
+Class-Path: ${project.classpath}
+
