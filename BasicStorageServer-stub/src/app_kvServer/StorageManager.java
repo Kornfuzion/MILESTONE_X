@@ -1,4 +1,4 @@
-package server;
+package app_kvServer;
 
 public class StorageManager {
 	public static void main(String[] args) {

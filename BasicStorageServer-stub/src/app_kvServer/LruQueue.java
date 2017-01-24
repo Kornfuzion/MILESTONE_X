@@ -1,4 +1,4 @@
-package server;
+package app_kvServer;
 
 import java.util.ArrayList;
 import java.util.Comparator;
