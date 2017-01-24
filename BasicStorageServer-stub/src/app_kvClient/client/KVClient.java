@@ -1,4 +1,4 @@
-package app_kvClient;
+package client;
 
 
 public class KVClient {
