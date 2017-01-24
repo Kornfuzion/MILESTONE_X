@@ -1,4 +1,4 @@
-package ece419StorageManager; //TODO WE change this later LOIS!
+package server;
 
 public class StorageManager {
 	public static void main(String[] args) {
