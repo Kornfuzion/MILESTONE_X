@@ -1,4 +1,4 @@
-package ece419StorageManager;
+package ece419StorageManager; //TODO WE change this later LOIS!
 
 import java.util.ArrayList;
 import java.util.PriorityQueue;

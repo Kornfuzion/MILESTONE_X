@@ -1,4 +1,4 @@
-package ece419StorageManager;
+package ece419StorageManager; //TODO WE change this later LOIS!
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -82,7 +82,15 @@ public class LruQueue implements CacheQueue{
 	//set a new value to cache obj with key,
 	@Override
 	public boolean setValue(String Key, String newValue) {
-		// TODO Auto-generated method stub
+		for(Cache c : lru_queue){
+			if(Key.equals(c.getKey())){
+				//create a new cache object, remove the current one "C" and add "D" to the end of the list
+				Cache d = new Cache(0,c.getKey(),newValue);
+				lru_queue.remove(c);
+				lru_queue.add(d);
+				return true;
+			}
+		}
 		return false;
 	}
 	

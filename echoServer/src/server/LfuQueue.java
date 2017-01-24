@@ -1,4 +1,4 @@
-package ece419StorageManager;
+package ece419StorageManager; //TODO WE change this later LOIS!
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
@@ -23,7 +23,7 @@ public class LfuQueue implements CacheQueue{
 				return true;
 			}
 		}
-		return false;
+		return false; 
 	}
 
 	//returns the value for the key,value pair, increment the times used
