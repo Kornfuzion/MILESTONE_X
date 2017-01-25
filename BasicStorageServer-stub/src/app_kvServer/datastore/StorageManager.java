@@ -1,4 +1,7 @@
-package app_kvServer;
+package datastore;
+
+import cache.Cache;
+import cache.CacheManager;
 
 public class StorageManager {
 	public static void main(String[] args) {

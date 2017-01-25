@@ -1,4 +1,4 @@
-package ece419StorageManager;
+package storage;
 
 import java.io.FileInputStream;
 

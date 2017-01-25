@@ -1,4 +1,4 @@
-package app_kvServer;
+package cache;
 
 public interface CacheQueue {
 		
