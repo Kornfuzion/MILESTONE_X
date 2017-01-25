@@ -1,4 +1,4 @@
-package ece419StorageManager;
+package datastore;
 
 import java.util.Comparator;
 
