@@ -2,7 +2,7 @@ package testing;
 
 import org.junit.Test;
 
-import app_kvServer.Storage;
+import storage.Storage;
 import junit.framework.TestCase;
 
 public class StorageTest extends TestCase {
