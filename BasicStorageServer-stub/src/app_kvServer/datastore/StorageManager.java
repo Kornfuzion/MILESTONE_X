@@ -2,6 +2,7 @@ package datastore;
 
 import cache.Cache;
 import cache.CacheManager;
+import storage.Storage;
 
 public class StorageManager {
 	

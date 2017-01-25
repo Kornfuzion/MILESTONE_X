@@ -13,7 +13,7 @@ public class LfuQueue implements CacheQueue{
 	public LfuQueue(int size) {
 		super();
 		comparator = new LfuComparator();
-		this.lfu_queue = new PriorityQueue<Cache>(comparator);
+		this.lfu_queue = new PriorityQueue<Cache>(0, comparator);
                 // TODO(victor): The following line is in Java 8 syntax. Need to switch it to Java 7.
 		//this.lfu_queue = new PriorityQueue<Cache>(Comparator.comparing(Cache::getTimesUsed));
 		this.max_size = size;
