@@ -5,7 +5,7 @@ import java.util.PriorityQueue;
 
 public class LfuQueue implements CacheQueue{
 
-	private PriorityQueue<Cache> lfu_queue;
+	private PriorityQueue<Cache> lfu_queue; 
 	private int max_size;
 	private Comparator<Cache> comparator;
 	
