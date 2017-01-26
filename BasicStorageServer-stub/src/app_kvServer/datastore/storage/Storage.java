@@ -57,6 +57,7 @@ public class Storage {
             value = br.readLine();
             br.close();
         } catch (IOException e) {
+            rwLock.readLock().unlock();
             return null; // should return error code that unexpected error happened.            
         } 
 
