@@ -74,6 +74,7 @@ public class LruQueue implements CacheQueue{
 		for(Cache c : lru_queue){
 			if(Key.equals(c.getKey())){
 				lru_queue.remove(c);
+				return true;
 			}
 		}
 		return false;
@@ -92,6 +93,16 @@ public class LruQueue implements CacheQueue{
 			}
 		}
 		return false;
+	}
+	
+	public int getSize(){
+		return lru_queue.size();	
+	}
+	
+	public void printQueue(){
+		for(int i = 0; i < lru_queue.size() ; i++){
+			System.out.println(lru_queue.get(i).getKey() + " " + lru_queue.get(i).getValue());
+		}	
 	}
 	
 	
