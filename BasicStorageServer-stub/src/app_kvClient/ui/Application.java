@@ -1,4 +1,4 @@
-package ui;
+package app_kvClient.ui;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,9 +10,10 @@ import org.apache.log4j.Logger;
 
 import logger.LogSetup;
 
-import client.KVClient;
-import client.ClientSocketListener;
-import client.TextMessage;
+import app_kvClient.client.*;
+import common.messages.*;
+import common.messages.commands.*;
+import common.messages.status.*;
 
 public class Application implements ClientSocketListener {
 
@@ -69,8 +70,7 @@ public class Application implements ClientSocketListener {
             }
             
         } else  if (tokens[0].equals("send")) {
-            // TODO: UNCOMMENT IF NEEDED.
-            /*if(tokens.length >= 2) {
+            if(tokens.length >= 2) {
                 if(client != null && client.isRunning()){
                     StringBuilder msg = new StringBuilder();
                     for(int i = 1; i < tokens.length; i++) {
@@ -85,7 +85,7 @@ public class Application implements ClientSocketListener {
                 }
             } else {
                 printError("No message passed!");
-            }*/
+            }
             
         } else if(tokens[0].equals("disconnect")) {
             disconnect();
@@ -113,35 +113,26 @@ public class Application implements ClientSocketListener {
     }
     
     private void sendMessage(String msg) {
-        // TODO: UNCOMMENT IF NEEDED.
-        /*
         try {
-            client.sendMessage(new TextMessage(msg));
+            client.sendMessage(new KVMessage(msg));
         } catch (IOException e) {
             printError("Unable to send message!");
             disconnect();
         }
-        */
     }
 
     private void connect(String address, int port) 
             throws UnknownHostException, IOException {
-        // TODO: UNCOMMENT IF NEEDED.
-        /*
         client = new KVClient(address, port);
         client.addListener(this);
         client.start();
-        */
     }
     
     private void disconnect() {
-        // TODO: UNCOMMENT IF NEEDED.
-        /*
         if(client != null) {
             client.closeConnection();
             client = null;
         }
-        */
     }
     
     private void printHelp() {
@@ -150,7 +141,7 @@ public class Application implements ClientSocketListener {
         sb.append(PROMPT);
         sb.append("::::::::::::::::::::::::::::::::");
         sb.append("::::::::::::::::::::::::::::::::\n");
-        sb.append(PROMPT).append("connect <host> <port>");
+        sb.append(PROMPT).append("connect <host> <port> <nipple>");
         sb.append("\t establishes a connection to a server\n");
         sb.append(PROMPT).append("send <text message>");
         sb.append("\t\t sends a text message to the server \n");
@@ -203,7 +194,7 @@ public class Application implements ClientSocketListener {
     }
     
     @Override
-    public void handleNewMessage(TextMessage msg) {
+    public void handleNewMessage(KVMessage msg) {
         if(!stop) {
             System.out.println(msg.getMsg());
             System.out.print(PROMPT);

@@ -13,7 +13,7 @@
   <!-- Configuration for client application -->
   <property name="clientjar.file"      value="ms1-client.jar"/>
   <property name="clientmanifest.file" value="CLIENT_MANIFEST.MF"/>
-  <property name="clientmain.class" value="app_kvClient.KVClient"/>
+  <property name="clientmain.class" value="app_kvClient.ui.Application"/>
   
   <!-- Configuration for server application -->
   <property name="serverjar.file"      value="ms1-server.jar"/>
