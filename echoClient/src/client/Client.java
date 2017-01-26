@@ -46,7 +46,7 @@ public class Client extends Thread {
 			
 			while(isRunning()) {
 				try {
-					TextMessage latestMsg = receiveMessage();
+				    Message latestMsg = receiveMessage();
 					for(ClientSocketListener listener : listeners) {
 						listener.handleNewMessage(latestMsg);
 					}
@@ -113,11 +113,11 @@ public class Client extends Thread {
 	}
 	
 	/**
-	 * Method sends a TextMessage using this socket.
+	 * Method sends a Message using this socket.
 	 * @param msg the message that is to be sent.
 	 * @throws IOException some I/O error regarding the output stream 
 	 */
-	public void sendMessage(TextMessage msg) throws IOException {
+	public void sendMessage(Message msg) throws IOException {
 		byte[] msgBytes = msg.getMsgBytes();
 		output.write(msgBytes, 0, msgBytes.length);
 		output.flush();
@@ -125,8 +125,7 @@ public class Client extends Thread {
     }
 	
 	
-	private TextMessage receiveMessage() throws IOException {
-		
+	private Message receiveMessage() throws IOException {
 		int index = 0;
 		byte[] msgBytes = null, tmp = null;
 		byte[] bufferBytes = new byte[BUFFER_SIZE];
@@ -134,8 +133,8 @@ public class Client extends Thread {
 		/* read first char from stream */
 		byte read = (byte) input.read();	
 		boolean reading = true;
-		
-		while(read != 13 && reading) {/* carriage return */
+
+		while (read != 13 && reading) {/* carriage return */
 			/* if buffer filled, copy to msg array */
 			if(index == BUFFER_SIZE) {
 				if(msgBytes == null){
@@ -154,12 +153,10 @@ public class Client extends Thread {
 			} 
 			
 			/* only read valid characters, i.e. letters and numbers */
-			if((read > 31 && read < 127)) {
-				bufferBytes[index] = read;
-				index++;
-			}
+			bufferBytes[index] = read;
+			index++;
 			
-			/* stop reading is DROP_SIZE is reached */
+			/* stop reading if DROP_SIZE is reached */
 			if(msgBytes != null && msgBytes.length + index >= DROP_SIZE) {
 				reading = false;
 			}
@@ -167,7 +164,7 @@ public class Client extends Thread {
 			/* read next char from stream */
 			read = (byte) input.read();
 		}
-		
+
 		if(msgBytes == null){
 			tmp = new byte[index];
 			System.arraycopy(bufferBytes, 0, tmp, 0, index);
@@ -180,7 +177,7 @@ public class Client extends Thread {
 		msgBytes = tmp;
 		
 		/* build final String */
-		TextMessage msg = new TextMessage(msgBytes);
+		Message msg = new Message(msgBytes);
 		logger.info("Receive message:\t '" + msg.getMsg() + "'");
 		return msg;
     }
