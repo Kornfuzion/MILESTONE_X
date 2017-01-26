@@ -31,6 +31,9 @@ public class AllTests {
 		//clientSuite.addTestSuite(AdditionalTest.class); 
 
         clientSuite.addTestSuite(StorageTest.class);
+		//clientSuite.addTestSuite(LruTest.class);
+		clientSuite.addTestSuite(LfuTest.class);
+		//clientSuite.addTestSuite(FifoTest.class);
 
 		return clientSuite;
 	}

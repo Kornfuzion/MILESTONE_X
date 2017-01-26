@@ -13,7 +13,7 @@ public class StorageManager {
 	public StorageManager(int policy, int cacheSize) {
 		super();
 		this.cacheManager =  new CacheManager(policy, cacheSize);
-		this.storage = new Storage();
+		//this.storage = new Storage();
 	}
 	
 	public String get(String key){

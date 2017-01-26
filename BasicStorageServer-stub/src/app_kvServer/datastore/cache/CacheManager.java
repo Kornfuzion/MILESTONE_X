@@ -52,7 +52,8 @@ public class CacheManager {
 		}
 	}
 	
-	public boolean add (String key, String value){
+	//dont use add... use cachemanager.update to add/update key/value pairs
+	/*public boolean add (String key, String value){
 		if(queue.cachePush(key, value)){
 			return true;
 		} else {
@@ -60,6 +61,7 @@ public class CacheManager {
 		}
 		
 	}
+	*/
 	
 	public boolean update(String key, String value){
 		if(queue.find(key)){
@@ -84,5 +86,12 @@ public class CacheManager {
 		}
 	}
 	
+	public int getSize(){
+		return queue.getSize();
+	}
+	
+	public void printQueue(){
+		queue.printQueue();
+	}
 	
 }
