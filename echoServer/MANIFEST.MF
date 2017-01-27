@@ -1,7 +1,11 @@
 Manifest-Version: 1.0
 Ant-Version: Apache Ant 1.9.4
 Created-By: 1.7.0_111-b01 (Oracle Corporation)
-built-by: elliot88
+<<<<<<< HEAD
+built-by: shenjam2
+=======
+built-by: zengshen
+>>>>>>> 7a1e37fee46c01fa1b6729d2d56ea1103ca8c830
 Main-Class: server.Server
 Class-Path: libs/log4j-1.2.17.jar
 

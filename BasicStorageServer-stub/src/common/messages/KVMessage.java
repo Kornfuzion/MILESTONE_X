@@ -18,7 +18,6 @@ import org.json.simple.parser.JSONParser;
  */
 
 public class KVMessage {
-
     private Logger logger = Logger.getRootLogger();
 
     // Handy characters for this class

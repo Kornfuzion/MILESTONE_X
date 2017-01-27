@@ -99,7 +99,7 @@ public class ClientConnection implements Runnable {
 				+ clientSocket.getPort() + ">: '" 
 				+"'");
     }
-	
+
     private void handleRequest(KVMessage message) throws IOException {
         KVMessage response = null;
         StatusType responseStatus;
@@ -160,7 +160,6 @@ public class ClientConnection implements Runnable {
                 }
                 break;
         }
-
         if (response != null) {
             sendMessage(response);
         }
