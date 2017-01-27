@@ -53,7 +53,7 @@ public class LfuQueue implements CacheQueue{
 			Cache c = new Cache(0, Key, Value);
 			if(lfu_queue.add(c)){
 				//do some logging here
-				System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
+				//System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
 				return true;
 			}
 		}
@@ -65,7 +65,7 @@ public class LfuQueue implements CacheQueue{
 			Cache c = new Cache(0, Key, Value);
 			if(lfu_queue.add(c)){
 				//do some logging here
-				System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LFU Queue");
+				//System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LFU Queue");
 				return true;
 			}
 		}

@@ -34,7 +34,7 @@ public class StorageTest extends TestCase {
         assertNotNull(value);
         assertTrue(value.equals("value1"));
     }
-
+	
     @Test
     public void testSetKeyDoesNotExist() {
         String key = "test1";
@@ -48,5 +48,5 @@ public class StorageTest extends TestCase {
         String key = "test2";
         storage.delete(key);
     }
-
+	
 }
