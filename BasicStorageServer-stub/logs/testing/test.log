@@ -1,0 +1,142 @@
+2017-01-27 14:00:14,288 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:00:14,289 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:00:14,289 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:00:14,289 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:00:14,289 INFO  [main] root: Server PUT updated cache with Key: Two Value: UpdatedTwo
+2017-01-27 14:00:14,289 INFO  [main] root: Server PUT into storage... Key: Two Value: UpdatedTwo
+2017-01-27 14:00:14,298 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:00:14,305 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:00:14,338 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:00:14,355 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:00:14,365 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:00:14,375 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:00:14,395 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:00:14,423 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:00:14,440 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:00:14,458 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:00:14,484 INFO  [main] root: Server GET with Key: One
+2017-01-27 14:00:14,517 INFO  [main] root: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 14:06:48,243 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:06:48,244 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:06:48,244 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:06:48,244 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:06:48,244 INFO  [main] root: Server GET with Key: One
+2017-01-27 14:06:48,244 INFO  [main] root: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 14:06:48,251 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:06:48,256 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:06:48,276 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:06:48,286 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:06:48,298 INFO  [main] root: Server PUT updated cache with Key: Two Value: UpdatedTwo
+2017-01-27 14:06:48,315 INFO  [main] root: Server PUT into storage... Key: Two Value: UpdatedTwo
+2017-01-27 14:06:48,334 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:06:48,351 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:06:48,370 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:06:48,395 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:06:48,416 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:06:48,430 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:09:13,221 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:09:13,222 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:09:13,222 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:09:13,222 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:09:13,222 INFO  [main] root: Server GET with Key: One
+2017-01-27 14:09:13,222 INFO  [main] root: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 14:09:13,227 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:09:13,234 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:09:13,247 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:09:13,263 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:09:13,277 INFO  [main] root: Server PUT updated cache with Key: Two Value: UpdatedTwo
+2017-01-27 14:09:13,301 INFO  [main] root: Server PUT into storage... Key: Two Value: UpdatedTwo
+2017-01-27 14:09:13,335 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:09:13,367 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:09:13,395 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:09:13,442 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:09:13,480 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:09:13,506 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:12:07,927 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:12:07,928 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:12:07,928 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:12:07,928 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:12:07,929 INFO  [main] root: Server GET with Key: One
+2017-01-27 14:12:07,929 INFO  [main] root: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 14:12:07,936 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:12:07,946 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:12:07,956 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:12:07,977 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:12:07,989 INFO  [main] root: Server PUT updated cache with Key: Two Value: UpdatedTwo
+2017-01-27 14:12:07,997 INFO  [main] root: Server PUT into storage... Key: Two Value: UpdatedTwo
+2017-01-27 14:12:08,018 INFO  [main] root: Server GET with Key: Two
+2017-01-27 14:12:08,028 INFO  [main] root: Server GET found Key, Value pair... Key: Two Value: UpdatedTwo
+2017-01-27 14:12:08,054 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:12:08,066 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:12:08,091 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:12:08,113 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:12:08,136 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:12:08,150 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:12:08,164 INFO  [main] root: Server GET with Key: One
+2017-01-27 14:12:08,181 INFO  [main] root: Server could not find in cache Key: One Looking into storage
+2017-01-27 14:12:08,209 INFO  [main] root: Server could not find key value pair...
+2017-01-27 14:14:23,501 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:14:23,501 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:14:23,502 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:14:23,502 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:14:23,502 INFO  [main] root: Server GET with Key: One
+2017-01-27 14:14:23,502 INFO  [main] root: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 14:14:23,514 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:14:23,523 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:14:23,536 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:14:23,554 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:14:23,565 INFO  [main] root: Server PUT updated cache with Key: Two Value: UpdatedTwo
+2017-01-27 14:14:23,584 INFO  [main] root: Server PUT into storage... Key: Two Value: UpdatedTwo
+2017-01-27 14:14:23,607 INFO  [main] root: Server GET with Key: Two
+2017-01-27 14:14:23,620 INFO  [main] root: Server GET found Key, Value pair... Key: Two Value: UpdatedTwo
+2017-01-27 14:14:23,650 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:14:23,674 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:14:23,692 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:14:23,733 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:14:23,755 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:14:23,789 INFO  [main] root: Server DELETE SUCCESSFUL in cache with Key: One
+2017-01-27 14:14:23,823 INFO  [main] root: Server GET with Key: One
+2017-01-27 14:14:23,853 INFO  [main] root: Server could not find in cache Key: One Looking into storage
+2017-01-27 14:14:23,877 INFO  [main] root: Server could not find key value pair...
+2017-01-27 14:15:03,165 INFO  [main] root: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:15:03,165 INFO  [main] root: Server PUT into storage... Key: One Value: One
+2017-01-27 14:15:03,165 INFO  [main] root: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:15:03,165 INFO  [main] root: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:15:03,166 INFO  [main] root: Server GET with Key: One
+2017-01-27 14:15:03,166 INFO  [main] root: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 14:27:49,566 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:27:49,566 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: One Value: One
+2017-01-27 14:27:49,566 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:27:49,567 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:27:49,567 INFO  [main] datastore.StorageManager: Server GET with Key: One
+2017-01-27 14:27:49,567 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 14:28:05,866 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: One Value: One
+2017-01-27 14:28:05,867 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: One Value: One
+2017-01-27 14:28:05,867 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 14:28:05,867 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: Two Value: Two
+2017-01-27 14:28:05,867 INFO  [main] datastore.StorageManager: Server GET with Key: One
+2017-01-27 14:28:05,867 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 15:11:37,354 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: One Value: One
+2017-01-27 15:11:37,363 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: One Value: One
+2017-01-27 15:11:37,385 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 15:11:37,407 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: Two Value: Two
+2017-01-27 15:11:37,425 INFO  [main] datastore.StorageManager: Server GET with Key: One
+2017-01-27 15:11:37,438 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 15:13:30,075 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: One Value: One
+2017-01-27 15:13:30,079 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: One Value: One
+2017-01-27 15:13:30,091 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 15:13:30,106 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: Two Value: Two
+2017-01-27 15:13:30,115 INFO  [main] datastore.StorageManager: Server GET with Key: One
+2017-01-27 15:13:30,139 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 15:14:20,595 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: One Value: One
+2017-01-27 15:14:20,601 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: One Value: One
+2017-01-27 15:14:20,620 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 15:14:20,636 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: Two Value: Two
+2017-01-27 15:14:20,645 INFO  [main] datastore.StorageManager: Server GET with Key: One
+2017-01-27 15:14:20,662 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 15:22:44,182 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: One Value: One
+2017-01-27 15:22:44,188 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: One Value: One
+2017-01-27 15:22:44,202 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 15:22:44,212 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: Two Value: Two
+2017-01-27 15:22:44,230 INFO  [main] datastore.StorageManager: Server GET with Key: One
+2017-01-27 15:22:44,239 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
