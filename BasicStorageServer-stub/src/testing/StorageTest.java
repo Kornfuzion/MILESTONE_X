@@ -43,4 +43,10 @@ public class StorageTest extends TestCase {
         storage.put(key, value);
     }
 
+    @Test
+    public void testDeleteExistingKey() {
+        String key = "test2";
+        storage.delete(key);
+    }
+
 }

@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -151,5 +152,38 @@ public class Storage {
             // If key or value is null.
             return false;
         }         
+    }
+
+    public boolean delete(String key) {
+        ReadWriteLock rwLock = fileLocks.get(key);
+
+        // Key does not exist.
+        if (rwLock == null) {
+            return true; //Should probably return that key does not exist
+        }
+
+        rwLock.writeLock().lock();
+        try {
+            String filePath = storagePath + File.separator + key;
+            File file = new File(filePath);
+            
+            // Return value of delete() does not matter.
+            file.delete();
+    
+            // Now we can delete the keys from both the fileLocks and writerLocks maps.
+            try {
+                fileLocks.remove(key);
+                writerLocks.remove(key);
+
+                rwLock.writeLock().unlock();
+                return true;
+            } catch (NullPointerException npe) {    // Shouldn't go here as long as key is not null
+                rwLock.writeLock().unlock();
+                return false;
+            }
+        } catch (SecurityException se) {
+            rwLock.writeLock().unlock();
+            return false;
+        }
     }
 }
