@@ -35,4 +35,12 @@ public class StorageTest extends TestCase {
         assertTrue(value.equals("value1"));
     }
 
+    @Test
+    public void testSetKeyDoesNotExist() {
+        String key = "test1";
+        String value = "value2";
+
+        storage.put(key, value);
+    }
+
 }
