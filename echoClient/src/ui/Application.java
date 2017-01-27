@@ -12,7 +12,7 @@ import logging.LogSetup;
 
 import client.Client;
 import client.ClientSocketListener;
-import client.TextMessage;
+import client.Message;
 
 public class Application implements ClientSocketListener {
 
@@ -113,7 +113,7 @@ public class Application implements ClientSocketListener {
 	
 	private void sendMessage(String msg){
 		try {
-			client.sendMessage(new TextMessage(msg));
+			client.sendMessage(new Message(msg));
 		} catch (IOException e) {
 			printError("Unable to send message!");
 			disconnect();
@@ -193,7 +193,7 @@ public class Application implements ClientSocketListener {
 	}
 	
 	@Override
-	public void handleNewMessage(TextMessage msg) {
+	public void handleNewMessage(Message msg) {
 		if(!stop) {
 			System.out.println(msg.getMsg());
 			System.out.print(PROMPT);

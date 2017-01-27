@@ -44,15 +44,15 @@ public class ClientConnection implements Runnable {
 		try {
 			output = clientSocket.getOutputStream();
 			input = clientSocket.getInputStream();
-		
-			sendMessage(new TextMessage(
+
+			sendMessage(new Message(
 					"Connection to MSRG Echo server established: " 
 					+ clientSocket.getLocalAddress() + " / "
 					+ clientSocket.getLocalPort()));
 			
 			while(isOpen) {
 				try {
-					TextMessage latestMsg = receiveMessage();
+					Message latestMsg = receiveMessage();
 					sendMessage(latestMsg);
 					
 				/* connection either terminated by the client or lost due to 
@@ -81,11 +81,11 @@ public class ClientConnection implements Runnable {
 	}
 	
 	/**
-	 * Method sends a TextMessage using this socket.
+	 * Method sends a Message using this socket.
 	 * @param msg the message that is to be sent.
 	 * @throws IOException some I/O error regarding the output stream 
 	 */
-	public void sendMessage(TextMessage msg) throws IOException {
+	public void sendMessage(Message msg) throws IOException {
 		byte[] msgBytes = msg.getMsgBytes();
 		output.write(msgBytes, 0, msgBytes.length);
 		output.flush();
@@ -96,7 +96,7 @@ public class ClientConnection implements Runnable {
     }
 	
 	
-	private TextMessage receiveMessage() throws IOException {
+	private Message receiveMessage() throws IOException {
 		
 		int index = 0;
 		byte[] msgBytes = null, tmp = null;
@@ -113,7 +113,7 @@ public class ClientConnection implements Runnable {
 //			return msg;
 //		}
 
-		while(/*read != 13  && */ read != 10 && read !=-1 && reading) {/* CR, LF, error */
+		while (read != 13 && reading) {/* CR, LF, error */
 			/* if buffer filled, copy to msg array */
 			if(index == BUFFER_SIZE) {
 				if(msgBytes == null){
@@ -156,7 +156,7 @@ public class ClientConnection implements Runnable {
 		msgBytes = tmp;
 		
 		/* build final String */
-		TextMessage msg = new TextMessage(msgBytes);
+		Message msg = new Message(msgBytes);
 		logger.info("RECEIVE \t<" 
 				+ clientSocket.getInetAddress().getHostAddress() + ":" 
 				+ clientSocket.getPort() + ">: '" 

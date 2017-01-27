@@ -1,5 +1,6 @@
 package cache;
 
+import java.util.Iterator;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
@@ -13,7 +14,7 @@ public class LfuQueue implements CacheQueue{
 	public LfuQueue(int size) {
 		super();
 		comparator = new LfuComparator();
-		this.lfu_queue = new PriorityQueue<Cache>(0, comparator);
+		this.lfu_queue = new PriorityQueue<Cache>(1, comparator);
                 // TODO(victor): The following line is in Java 8 syntax. Need to switch it to Java 7.
 		//this.lfu_queue = new PriorityQueue<Cache>(Comparator.comparing(Cache::getTimesUsed));
 		this.max_size = size;
@@ -36,7 +37,10 @@ public class LfuQueue implements CacheQueue{
 		for(Cache c : lfu_queue){
 			if(Key.equals(c.getKey())){
 				c.setTimesUsed(c.getTimesUsed() + 1); //increment the times used
-				return c.getValue();
+				Cache d = new Cache(c.getTimesUsed(), c.getKey(), c.getValue());
+				lfu_queue.remove(c);
+				lfu_queue.add(d);
+				return d.getValue();
 			}
 		}
 		return null;
@@ -61,7 +65,7 @@ public class LfuQueue implements CacheQueue{
 			Cache c = new Cache(0, Key, Value);
 			if(lfu_queue.add(c)){
 				//do some logging here
-				System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
+				System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LFU Queue");
 				return true;
 			}
 		}
@@ -87,10 +91,28 @@ public class LfuQueue implements CacheQueue{
 			if(Key.equals(c.getKey())){
 				c.setValue(newValue);
 				c.setTimesUsed(c.getTimesUsed() + 1);
+				Cache d = new Cache(c.getTimesUsed(), c.getKey(), c.getValue());
+				lfu_queue.remove(c);
+				lfu_queue.add(d);
 				return true;
 			}
 		}
 		return false;
 	}
+
+	public int getSize(){
+		return lfu_queue.size();	
+	}
+	
+	public void printQueue(){
+		/*for(int i = 0; i < lfu_queue.size() ; i++){
+			System.out.println(lfu_queue.get(i).getKey() + " " + lfu_queue.get(i).getValue());
+		}*/
+		Iterator<Cache> e = lfu_queue.iterator();
+		while(e.hasNext()){
+			Cache c = e.next();
+			System.out.println(c.getKey() + " " + c.getValue() + "  Times Accessed: " + c.getTimesUsed());
+		}
+	}	
 
 }
