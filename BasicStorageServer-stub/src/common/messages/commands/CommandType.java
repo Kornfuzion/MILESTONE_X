@@ -9,4 +9,4 @@ package common.messages.commands;
  * - We can obtain the underlying enum from an int value by using its ordinal/position in the enum array
         i.e. CommandType putCommand = CommandType.values()[2];
  */
-public enum CommandType {INVALID, GET, PUT, UPDATE}
+public enum CommandType {INVALID, GET, PUT, DELETE}

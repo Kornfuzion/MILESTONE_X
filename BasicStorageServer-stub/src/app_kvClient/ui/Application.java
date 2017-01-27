@@ -114,7 +114,7 @@ public class Application implements ClientSocketListener {
     
     private void sendMessage(String msg) {
         try {
-            client.sendMessage(new KVMessage(msg));
+            client.sendMessage(KVMessage.createConnectionResponse(msg));
         } catch (IOException e) {
             printError("Unable to send message!");
             disconnect();
@@ -196,7 +196,7 @@ public class Application implements ClientSocketListener {
     @Override
     public void handleNewMessage(KVMessage msg) {
         if(!stop) {
-            System.out.println(msg.getMsg());
+            System.out.println(msg.getMessage());
             System.out.print(PROMPT);
         }
     }
