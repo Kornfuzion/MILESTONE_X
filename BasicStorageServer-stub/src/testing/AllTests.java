@@ -30,11 +30,11 @@ public class AllTests {
 		//clientSuite.addTestSuite(InteractionTest.class); 
 		//clientSuite.addTestSuite(AdditionalTest.class); 
 
-        clientSuite.addTestSuite(StorageTest.class);
+        //clientSuite.addTestSuite(StorageTest.class);
 		//clientSuite.addTestSuite(LruTest.class);
-		clientSuite.addTestSuite(LfuTest.class);
+		//clientSuite.addTestSuite(LfuTest.class);
 		//clientSuite.addTestSuite(FifoTest.class);
-
+		clientSuite.addTestSuite(StorageManagerTest.class);
 		return clientSuite;
 	}
 	

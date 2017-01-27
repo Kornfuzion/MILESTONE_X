@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
 
+import datastore.*;
 import logger.*;
 
 import org.apache.log4j.Level;
@@ -15,13 +16,14 @@ import org.apache.log4j.Logger;
  */
 public class KVServer extends Thread {
 
-	private static Logger logger = Logger.getRootLogger();
+	private static Logger logger = Logger.getLogger(KVServer.class.getName());
 	
     private int port;
     private int cacheSize;
     private String strategy;
     private ServerSocket serverSocket;
     private boolean running;
+	private StorageManager storageManager;
 
     /**
      * Start KV Server at given port
@@ -37,6 +39,14 @@ public class KVServer extends Thread {
         this.port = port;
         this.cacheSize = cacheSize;
         this.strategy = strategy;
+		if(strategy.equals("LRU"))
+			storageManager = new StorageManager(1, cacheSize);
+		else if(strategy.equals("LFU"))
+			storageManager = new StorageManager(2, cacheSize);
+		else if(strategy.equals("FIFO"))
+			storageManager = new StorageManager(3, cacheSize);
+		else
+			logger.error("strategy is not one of the three... Strategy: " + strategy);
     }
 
     /**
@@ -107,7 +117,7 @@ public class KVServer extends Thread {
      */
     public static void main(String[] args) {
     	try {
-			new LogSetup("logs/server.log", Level.ALL);
+			new LogSetup("logs/server/server.log", Level.ALL);
 			if(args.length != 1) {
 				System.out.println("Error! Invalid number of arguments!");
 				System.out.println("Usage: Server <port>!");

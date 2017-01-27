@@ -41,7 +41,7 @@ public class FifoQueue implements CacheQueue{
 			Cache c = new Cache(0, Key, Value);
 			if(fifo_queue.add(c)){
 				//do some logging here
-				System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into Fifo Queue");
+				//System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into Fifo Queue");
 				return true;
 			}
 		}
@@ -53,7 +53,7 @@ public class FifoQueue implements CacheQueue{
 			Cache c = new Cache(0, Key, Value);
 			if(fifo_queue.add(c)){
 				//do some logging here
-				System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
+				//System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
 				return true;
 			}
 		}

@@ -49,7 +49,7 @@ public class LruQueue implements CacheQueue{
 			Cache c = new Cache(0, Key, Value);
 			if(lru_queue.add(c)){
 				//do some logging here
-				System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
+				//System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
 				return true;
 			}
 		}
@@ -61,7 +61,7 @@ public class LruQueue implements CacheQueue{
 			Cache c = new Cache(0, Key, Value);
 			if(lru_queue.add(c)){
 				//do some logging here
-				System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
+				//System.out.println("Successfully added Key:" + Key + " Value: " + Value + "Into LRU Queue");
 				return true;
 			}
 		}
