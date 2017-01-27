@@ -22,3 +22,15 @@
 2017-01-27 15:14:20,645 INFO  [main] datastore.StorageManager: Server GET with Key: One
 2017-01-27 15:14:20,662 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
 2017-01-27 15:14:20,662 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 15:22:44,182 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: One Value: One
+2017-01-27 15:22:44,182 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: One Value: One
+2017-01-27 15:22:44,188 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: One Value: One
+2017-01-27 15:22:44,188 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: One Value: One
+2017-01-27 15:22:44,202 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 15:22:44,202 INFO  [main] datastore.StorageManager: Server PUT updated cache with Key: Two Value: Two
+2017-01-27 15:22:44,212 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: Two Value: Two
+2017-01-27 15:22:44,212 INFO  [main] datastore.StorageManager: Server PUT into storage... Key: Two Value: Two
+2017-01-27 15:22:44,230 INFO  [main] datastore.StorageManager: Server GET with Key: One
+2017-01-27 15:22:44,230 INFO  [main] datastore.StorageManager: Server GET with Key: One
+2017-01-27 15:22:44,239 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
+2017-01-27 15:22:44,239 INFO  [main] datastore.StorageManager: Server GET found Key, Value pair... Key: One Value: One
