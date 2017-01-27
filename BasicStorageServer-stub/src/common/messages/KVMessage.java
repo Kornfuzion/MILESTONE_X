@@ -22,17 +22,22 @@ public class KVMessage {
     private Logger logger = Logger.getRootLogger();
 	private static final char LINE_FEED = 0x0A;
 	private static final char RETURN = 0x0D;
+    private static final String EMPTY_STRING = "";
     
     // I know these JSON key names are a bit long, we can change them later
     // or figure out a cleaner way to list our JSON members
-    public static String SEQUENCE_FIELD = "sequence_num";
     public static String COMMAND_FIELD = "command";
+    public static String KEY_FIELD = "key";
+    public static String VALUE_FIELD = "value";
+    public static String STATUS_FIELD = "status";
     public static String MESSAGE_FIELD = "message";
 
-	private String msg;
-	private byte[] msgBytes;
-    private int sequenceNum;
+	private byte[] serializedBytes;
     private CommandType command;
+    private String key;
+    private String value;
+    private String message;
+    private StatusType status;
 	
     /**
      * Constructs a Message object with a given array of bytes that 
@@ -41,7 +46,7 @@ public class KVMessage {
      * @param bytes the bytes that form the message in ASCII coding.
      */
 	public KVMessage(byte[] bytes) {
-		this.msgBytes = addCtrChars(bytes);
+		this.serializedBytes = addCtrChars(bytes);
 		parseBytesToMessage(new String(bytes));
 	}
 
@@ -51,27 +56,8 @@ public class KVMessage {
      * 
      * @param msg the String that forms the message.
      */
-	public KVMessage(int sequenceNum, CommandType command, String msg) {
-		this.msg = msg;
-        this.sequenceNum = sequenceNum;
+	public KVMessage(CommandType command) {
         this.command = command;
-		this.msgBytes = toByteArray(this.sequenceNum, this.command, this.msg);
-	}
-
-	public KVMessage(String msg) {
-		this.msg = msg;
-        this.sequenceNum = -1;
-        this.command = CommandType.INVALID;
-		this.msgBytes = toByteArray(this.sequenceNum, this.command, this.msg);
-	}
-
-	/**
-	 * Returns the content of this Message as a String.
-	 * 
-	 * @return the content of this message in String format.
-	 */
-	public String getMsg() {
-		return msg.trim();
 	}
 
 	/**
@@ -80,8 +66,11 @@ public class KVMessage {
 	 * @return the content of this message as an array of bytes 
 	 * 		in ASCII coding.
 	 */
-	public byte[] getMsgBytes() {
-		return msgBytes;
+	public byte[] getSerializedBytes() {
+        if (this.serializedBytes == null) {
+            this.serializedBytes = toByteArray(this.command, this.key, this.value, this.message, this.status);
+        }
+		return serializedBytes;
 	}
 	
 	private byte[] addCtrChars(byte[] bytes) {
@@ -94,13 +83,15 @@ public class KVMessage {
 		return tmp;		
 	}
 	
-	private byte[] toByteArray(int sequenceNum, CommandType command, String msg) {
+	private byte[] toByteArray(CommandType command, String key, String value, String message, StatusType status) {
         try {
             JSONObject obj = new JSONObject();
 
-            obj.put(SEQUENCE_FIELD, sequenceNum);
             obj.put(COMMAND_FIELD, command.ordinal());
-            obj.put(MESSAGE_FIELD, msg);
+            obj.put(KEY_FIELD, key);
+            obj.put(VALUE_FIELD, value);
+            obj.put(MESSAGE_FIELD, message);
+            obj.put(STATUS_FIELD, status.ordinal());
 
             StringWriter out = new StringWriter();
             obj.writeJSONString(out);
@@ -123,28 +114,98 @@ public class KVMessage {
     private void parseBytesToMessage(String s) {
         try {
             JSONObject jsonObject = (JSONObject) new JSONParser().parse(s);
-            this.msg = (String) jsonObject.get(MESSAGE_FIELD);
-            this.sequenceNum = Integer.valueOf(((Long) jsonObject.get(SEQUENCE_FIELD)).intValue());
             this.command = CommandType.values()
+                [Integer.valueOf(((Long) jsonObject.get(COMMAND_FIELD)).intValue())];
+            this.key = (String) jsonObject.get(KEY_FIELD);
+            this.value = (String) jsonObject.get(VALUE_FIELD);
+            this.message = (String) jsonObject.get(MESSAGE_FIELD);
+            this.status = StatusType.values()
                 [Integer.valueOf(((Long) jsonObject.get(COMMAND_FIELD)).intValue())];
         } catch (ParseException e) {
             logger.info("PARSE EXCEPTION: error parsing bytes to Message");
             e.printStackTrace();
 
-            this.msg = null;
-            this.sequenceNum = -1;
             this.command = CommandType.INVALID;
+            this.key = EMPTY_STRING;
+            this.value = EMPTY_STRING;
+            this.message = EMPTY_STRING;
+            this.status = StatusType.INVALID;
 
             return;
         }
     }
 
-    public StatusType getStatus() {
-        return StatusType.INVALID;
+    // Create request methods
+    public static KVMessage createGetRequest(String key) {
+        return new KVMessage(CommandType.GET)
+                    .setKey(key)
+                    .setValue(EMPTY_STRING)
+                    .setMessage(EMPTY_STRING)
+                    .setStatus(StatusType.REQUEST);
+        
     }
 
-    //placeholder function for the interaction test...we'll need to fix the test later
+    public static KVMessage createPutRequest(String key, String value) {
+        return new KVMessage(CommandType.PUT)
+                    .setKey(key)
+                    .setValue(value)
+                    .setMessage(EMPTY_STRING)
+                    .setStatus(StatusType.REQUEST);
+    }
+
+    public static KVMessage createConnectionResponse(String message) {
+        return new KVMessage(CommandType.INVALID)
+                    .setKey(EMPTY_STRING)
+                    .setValue(EMPTY_STRING)
+                    .setMessage(message)
+                    .setStatus(StatusType.CONNECT_SUCCESS);
+    }
+
+    // Getter methods
+    public CommandType getCommand() {
+        return command;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
     public String getValue() {
-        return "";
+        return value;
+    }   
+
+    public String getMessage() {
+        return message;
+    }   
+
+    public StatusType getStatus() {
+        return status;
+    }
+
+    // Setter methods
+    // TODO: input validation
+    public KVMessage setCommand(CommandType command) {
+        this.command = command;
+        return this;
+    }
+
+    public KVMessage setKey(String key) {
+        this.key = key;
+        return this;
+    }
+
+    public KVMessage setValue(String value) {
+        this.value = value;
+        return this;
+    }
+
+    public KVMessage setMessage(String message) {
+        this.message = message;
+        return this;
+    }
+
+    public KVMessage setStatus(StatusType status) {
+        this.status = status;
+        return this;
     }
 }

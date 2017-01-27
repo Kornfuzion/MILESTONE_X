@@ -113,16 +113,24 @@ public class KVClient extends Thread {
 		listeners.add(listener);
 	}
 	
+    public void get(String key) throws IOException {
+        sendMessage(KVMessage.createGetRequest(key));
+    }
+
+    public void put(String key, String value) throws IOException {
+        sendMessage(KVMessage.createPutRequest(key, value));
+    }
+
 	/**
 	 * Method sends a Message using this socket.
 	 * @param msg the message that is to be sent.
 	 * @throws IOException some I/O error regarding the output stream 
 	 */
 	public void sendMessage(KVMessage msg) throws IOException {
-		byte[] msgBytes = msg.getMsgBytes();
+		byte[] msgBytes = msg.getSerializedBytes();
 		output.write(msgBytes, 0, msgBytes.length);
 		output.flush();
-		logger.info("Send message:\t '" + msg.getMsg() + "'");
+		logger.info("Send message:\t '" + msg.getSerializedBytes() + "'");
     }
 	
 	
@@ -179,7 +187,6 @@ public class KVClient extends Thread {
 		
 		/* build final String */
 		KVMessage msg = new KVMessage(msgBytes);
-		logger.info("Receive message:\t '" + msg.getMsg() + "'");
 		return msg;
     }
 }

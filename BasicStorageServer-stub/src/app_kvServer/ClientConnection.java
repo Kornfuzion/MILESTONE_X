@@ -1,6 +1,8 @@
 package app_kvServer;
 
 import common.messages.*;
+import common.messages.status.*;
+import common.messages.commands.*;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -46,16 +48,14 @@ public class ClientConnection implements Runnable {
 			output = clientSocket.getOutputStream();
 			input = clientSocket.getInputStream();
 
-			sendMessage(new KVMessage(
-					"Connection to MSRG Echo server established: " 
+			sendMessage(KVMessage.createConnectionResponse(
+                    "Connection to MSRG Echo server established: " 
 					+ clientSocket.getLocalAddress() + " / "
 					+ clientSocket.getLocalPort()));
 			
 			while(isOpen) {
 				try {
-					KVMessage latestMsg = receiveMessage();
-					sendMessage(latestMsg);
-					
+                    handleRequest(receiveMessage());
 				/* connection either terminated by the client or lost due to 
 				 * network problems*/	
 				} catch (IOException ioe) {
@@ -74,7 +74,7 @@ public class ClientConnection implements Runnable {
 					input.close();
 					output.close();
 					clientSocket.close();
-				}
+				}       
 			} catch (IOException ioe) {
 				logger.error("Error! Unable to tear down connection!", ioe);
 			}
@@ -87,15 +87,41 @@ public class ClientConnection implements Runnable {
 	 * @throws IOException some I/O error regarding the output stream 
 	 */
 	public void sendMessage(KVMessage msg) throws IOException {
-		byte[] msgBytes = msg.getMsgBytes();
+		byte[] msgBytes = msg.getSerializedBytes();
 		output.write(msgBytes, 0, msgBytes.length);
 		output.flush();
 		logger.info("SEND \t<" 
 				+ clientSocket.getInetAddress().getHostAddress() + ":" 
 				+ clientSocket.getPort() + ">: '" 
-				+ msg.getMsg() +"'");
+				+"'");
     }
 	
+    private void handleRequest(KVMessage message) {
+        switch (message.getCommand()) {
+            case GET:
+                // GET SOMETHING
+                // SEND GET RESPONSE
+                break;
+            
+            case PUT:
+                // PUT SOMETHING
+                // SEND RESPONSE CODE
+                break;
+
+            case DELETE:
+                // DELETE SOMETHING
+                // SEND RESPONSE CODE
+            break;
+
+            case INVALID:
+                // why might they be sending us this?
+                // if there is a message, print it
+                if (message.getMessage().length() > 0) {
+                    logger.info("CLIENT SENT MESSAGE: " + message.getMessage());
+                }
+                break;
+        }
+    }
 	
 	private KVMessage receiveMessage() throws IOException {
 		
@@ -161,7 +187,7 @@ public class ClientConnection implements Runnable {
 		logger.info("RECEIVE \t<" 
 				+ clientSocket.getInetAddress().getHostAddress() + ":" 
 				+ clientSocket.getPort() + ">: '" 
-				+ msg.getMsg().trim() + "'");
+				+ msg.getMessage().trim() + "'");
 		return msg;
     }
 	
