@@ -31,14 +31,14 @@ public class StorageManagerTest extends TestCase {
     public void tearDown() {
         //do nothing
     }
-/*
+
     @Test
     public void testGet(){
         String s = storageManager.get("One");
         assertNotNull(s);
         assertTrue(s.equals("One"));
     }
-*/
+
     /*
     @Test
     public void testSet(){
