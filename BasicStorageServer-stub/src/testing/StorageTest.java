@@ -34,8 +34,8 @@ public class StorageTest extends TestCase {
 
     @Before
     public void setUp() throws FileNotFoundException{
-        File testStorageFilesDirectory = new File("src/testing/resources");
-        this.storagePath = testStorageFilesDirectory.getAbsolutePath();
+        File testStorageFilesDirectory = new File("src/testing/resources/storagetest");
+        storagePath = testStorageFilesDirectory.getAbsolutePath();
         storage = new Storage(this.storagePath);
    }
 

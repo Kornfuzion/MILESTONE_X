@@ -4,6 +4,7 @@ import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 
 import cache.*;
 import datastore.*;
@@ -12,19 +13,21 @@ import logger.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import java.io.File;
+
 /**
  * Represents a simple Echo Server implementation.
  */
 public class KVServer extends Thread {
 
-	private static Logger logger = Logger.getLogger(KVServer.class.getName());
-	
+    private static Logger logger = Logger.getLogger(KVServer.class.getName());
+    
     private int port;
     private int cacheSize;
     private CachePolicy policy;
     private ServerSocket serverSocket;
     private boolean running;
-	private StorageManager storageManager;
+    private StorageManager storageManager;
 
     /**
      * Start KV Server at given port
@@ -40,7 +43,32 @@ public class KVServer extends Thread {
         this.port = port;
         this.cacheSize = cacheSize;
         this.policy = CachePolicy.parseString(policy);
-        this.storageManager = new StorageManager(this.policy, cacheSize);
+        String storagePath = System.getProperty("user.dir") + File.separator + "storage";
+        try {
+            File storageFolder = new File(storagePath);
+            if (!storageFolder.exists()) {
+                if (!storageFolder.mkdir()) {
+                    System.out.println("Could not create folder " + storagePath + ". Please check your permissions.");
+                    System.exit(1);
+                }
+            } else {
+                if(!storageFolder.isDirectory()) {
+                    System.out.println(storagePath + " is detected as not a folder. Please either rename or delete the existing file.");
+                    System.exit(1);
+                }
+            }
+        } catch (SecurityException se) {
+            System.out.println("Check write permissions for " + System.getProperty("user.dir"));
+            System.exit(1);
+
+        }
+       
+        try { 
+            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath);
+        } catch (FileNotFoundException fnfe) {
+            System.out.println("Could not find " + storagePath + ". Please try again");
+            System.exit(1);
+        }
     }
 
     /**
@@ -49,24 +77,24 @@ public class KVServer extends Thread {
      */
     public void run() {
         
-    	running = initializeServer();
+        running = initializeServer();
         
         if(serverSocket != null) {
-	        while(isRunning()){
-	            try {
-	                Socket client = serverSocket.accept();                
-	                ClientConnection connection = 
-	                		new ClientConnection(client, storageManager);
-	                new Thread(connection).start();
-	                
-	                logger.info("Connected to " 
-	                		+ client.getInetAddress().getHostName() 
-	                		+  " on port " + client.getPort());
-	            } catch (IOException e) {
-	            	logger.error("Error! " +
-	            			"Unable to establish connection. \n", e);
-	            }
-	        }
+            while(isRunning()){
+                try {
+                    Socket client = serverSocket.accept();                
+                    ClientConnection connection = 
+                            new ClientConnection(client, storageManager);
+                    new Thread(connection).start();
+                    
+                    logger.info("Connected to " 
+                            + client.getInetAddress().getHostName() 
+                            +  " on port " + client.getPort());
+                } catch (IOException e) {
+                    logger.error("Error! " +
+                            "Unable to establish connection. \n", e);
+                }
+            }
         }
         logger.info("Server stopped.");
     }
@@ -81,25 +109,25 @@ public class KVServer extends Thread {
     public void stopServer(){
         running = false;
         try {
-			serverSocket.close();
-		} catch (IOException e) {
-			logger.error("Error! " +
-					"Unable to close socket on port: " + port, e);
-		}
+            serverSocket.close();
+        } catch (IOException e) {
+            logger.error("Error! " +
+                    "Unable to close socket on port: " + port, e);
+        }
     }
 
     private boolean initializeServer() {
-    	logger.info("Initialize server ...");
-    	try {
+        logger.info("Initialize server ...");
+        try {
             serverSocket = new ServerSocket(port);
             logger.info("Server listening on port: " 
-            		+ serverSocket.getLocalPort());    
+                    + serverSocket.getLocalPort());    
             return true;
         
         } catch (IOException e) {
-        	logger.error("Error! Cannot open server socket:");
+            logger.error("Error! Cannot open server socket:");
             if(e instanceof BindException){
-            	logger.error("Port " + port + " is already bound!");
+                logger.error("Port " + port + " is already bound!");
             }
             return false;
         }
@@ -110,24 +138,24 @@ public class KVServer extends Thread {
      * @param args contains the port number at args[0].
      */
     public static void main(String[] args) {
-    	try {
-			new LogSetup("logs/server/server.log", Level.ALL);
-			if(args.length != 1) {
-				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <port>!");
-			} else {
-				int port = Integer.parseInt(args[0]);
-				// TODO(James): Make it so that these can be customized.
-				new KVServer(port, 256, "FIFO").start();
-			}
-		} catch (IOException e) {
-			System.out.println("Error! Unable to initialize logger!");
-			e.printStackTrace();
-			System.exit(1);
-		} catch (NumberFormatException nfe) {
-			System.out.println("Error! Invalid argument <port>! Not a number!");
-			System.out.println("Usage: Server <port>!");
-			System.exit(1);
-		}
+        try {
+            new LogSetup("logs/server/server.log", Level.ALL);
+            if(args.length != 1) {
+                System.out.println("Error! Invalid number of arguments!");
+                System.out.println("Usage: Server <port>!");
+            } else {
+                int port = Integer.parseInt(args[0]);
+                // TODO(James): Make it so that these can be customized.
+                new KVServer(port, 256, "FIFO").start();
+            }
+        } catch (IOException e) {
+            System.out.println("Error! Unable to initialize logger!");
+            e.printStackTrace();
+            System.exit(1);
+        } catch (NumberFormatException nfe) {
+            System.out.println("Error! Invalid argument <port>! Not a number!");
+            System.out.println("Usage: Server <port>!");
+            System.exit(1);
+        }
     }
 }

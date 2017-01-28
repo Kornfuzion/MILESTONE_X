@@ -10,6 +10,7 @@ import logger.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 
 public class StorageManager {
    
@@ -20,11 +21,14 @@ public class StorageManager {
 
     
     //constructor
-    public StorageManager(CachePolicy policy, int cacheSize) {
+    public StorageManager(CachePolicy policy, int cacheSize, String storageDirectory) throws FileNotFoundException {
         super();
         this.cacheManager =  new CacheManager(policy, cacheSize);
+        //String currentDirectory = System.getProperty("user.dir");
+        
         // TODO(Louis): Undo this comment when ready.
-        //this.storage = new Storage();
+        this.storage = new Storage(storageDirectory);
+
 		try {
 			new LogSetup("logs/server/storageManager.log", Level.ALL);
 		} catch (IOException e) {

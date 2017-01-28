@@ -11,7 +11,7 @@ import java.lang.ClassLoader;
 import junit.framework.TestCase;
 
 public class LruTest extends TestCase {
-	private CacheManager cacheManager;
+/*	private CacheManager cacheManager;
 	
 	@Before
     public void setUp() {
@@ -76,5 +76,5 @@ public class LruTest extends TestCase {
 		assertTrue(cacheManager.update("eleventhElement", "11"));
 		cacheManager.printQueue();
 	}
-
+*/
 }
