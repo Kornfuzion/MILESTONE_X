@@ -11,11 +11,10 @@ import java.lang.ClassLoader;
 import junit.framework.TestCase;
 
 public class FifoTest extends TestCase {
-	private CacheManager cacheManager;
-/*	
+    private CacheManager cacheManager;
 	@Before
     public void setUp() {
-        cacheManager = new CacheManager(3, 10);
+        cacheManager = new CacheManager(CachePolicy.FIFO, 10);
 		cacheManager.update("A","A");
 		cacheManager.update("B","B");
 		cacheManager.update("C","C");
@@ -89,5 +88,4 @@ public class FifoTest extends TestCase {
 		String t = cacheManager.get("A");
 		assertNull(t);
 	}
-*/
 }

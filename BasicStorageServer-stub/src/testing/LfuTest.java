@@ -11,12 +11,11 @@ import java.lang.ClassLoader;
 import junit.framework.TestCase;
 
 public class LfuTest extends TestCase {
-/*
 	private CacheManager cacheManager;
 	
 	@Before
     public void setUp() {
-        cacheManager = new CacheManager(2, 10);
+        cacheManager = new CacheManager(CachePolicy.LFU, 10);
 		cacheManager.update("A","A");
 		cacheManager.update("B","B");
 		cacheManager.update("C","C");
@@ -112,6 +111,5 @@ public class LfuTest extends TestCase {
 		t = cacheManager.get("C");
 		assertNull(t);
 	}
-*/
 }
 
