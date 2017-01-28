@@ -1,4 +1,6 @@
 *.class
+*.log
+*.MF
 
 # BlueJ files
 *.ctxt
@@ -16,4 +18,4 @@ ms1-server.jar
 hs_err_pid*
 
 # Open files
-.java.swp
+*.java.swp
