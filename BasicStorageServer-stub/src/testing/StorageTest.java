@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import storage.Storage;
+import common.messages.status.StatusType;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -69,8 +70,8 @@ public class StorageTest extends TestCase {
         // Make sure that file does not already exist.
         file.delete();
         
-        boolean successfulPut = storage.put(testKey2, testValue2);
-        assertTrue(successfulPut && file.exists());
+        StatusType status = storage.put(testKey2, testValue2);
+        assertTrue((status == StatusType.PUT_SUCCESS) && file.exists());
 
         BufferedReader br = new BufferedReader(new FileReader(filePath));
         String checkValue = br.readLine();
@@ -85,14 +86,14 @@ public class StorageTest extends TestCase {
         String filePath = storagePath + File.separator + testKey3;
         File file = new File(filePath);
  
-        boolean successfulPut = storage.put(testKey3, testValue3);
-        assertTrue(successfulPut && file.exists());
+        StatusType status = storage.put(testKey3, testValue3);
+        assertTrue((status == StatusType.PUT_SUCCESS) && file.exists());
 
         // Key now exists and so does the file.
 
         String newValue = "newvalue";
-        successfulPut = storage.put(testKey3, newValue);
-        assertTrue(successfulPut && file.exists());
+        status = storage.put(testKey3, newValue);
+        assertTrue((status == StatusType.PUT_UPDATE) && file.exists());
         
         BufferedReader br = new BufferedReader(new FileReader(filePath));
         String line = br.readLine();
@@ -109,21 +110,21 @@ public class StorageTest extends TestCase {
         String filePath = storagePath + File.separator + testKey4;
         File file = new File(filePath);
         
-        boolean successfulPut = storage.put(testKey4, testValue4);
-        assertTrue(successfulPut && file.exists());
+        StatusType status = storage.put(testKey4, testValue4);
+        assertTrue((status == StatusType.PUT_SUCCESS) && file.exists());
 
         // At this point the key now exists and so does the file.
 
-        boolean successfulDelete = storage.delete(testKey4);
-        assertTrue(successfulDelete && !file.exists());
+        status = storage.delete(testKey4);
+        assertTrue((status == StatusType.DELETE_SUCCESS) && !file.exists());
     }
 
     @Test
     public void testDeleteNonExistingKey() {
         String filePath = storagePath + File.separator + testNonExistingKey;
         File file = new File(filePath);
-        boolean successfulDelete = storage.delete(testNonExistingKey);
-        assertTrue(!successfulDelete && !file.exists());
+        StatusType status = storage.delete(testNonExistingKey);
+        assertTrue((status == StatusType.DELETE_ERROR) && !file.exists());
     }
     
 }

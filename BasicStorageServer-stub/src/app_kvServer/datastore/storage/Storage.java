@@ -1,5 +1,7 @@
 package storage;
 
+import common.messages.status.StatusType;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -39,6 +41,10 @@ public class Storage {
     }
 
     public String get(String key) {      
+        if (key == null) {
+            return null;
+        }
+
         String value = null;
         ReadWriteLock rwLock = fileLocks.get(key);
 
@@ -91,7 +97,11 @@ public class Storage {
         }
     }
 
-    public boolean put(String key, String value) {
+    public StatusType put(String key, String value) {
+        if ((key == value) || (value == null)) {
+            return StatusType.PUT_ERROR;
+        }
+
         ReadWriteLock rwLock = fileLocks.get(key);
         if (rwLock == null) {   // key does not exist
             ReadWriteLock newRWLock = new ReentrantReadWriteLock();
@@ -105,12 +115,12 @@ public class Storage {
                         // Another thread came after and was either a delete or another put.
                         // We can safely abort this put (assuming the other thread doesn't crash).
                         newRWLock.writeLock().unlock();
-                        return true; // Not really true but... 
+                        return StatusType.PUT_SUCCESS; // Not really true but... 
                     }
 
                     boolean write = writeToFile(key, value);
                     newRWLock.writeLock().unlock();
-                    return write;                        
+                    return write ? StatusType.PUT_SUCCESS : StatusType.PUT_ERROR;                        
                 } else { // lock already exists
                     fileLock.writeLock().lock();
                     ReadWriteLock checkLock = fileLocks.get(key);
@@ -118,12 +128,12 @@ public class Storage {
                         // Another thread came after and was either a delete or another put.
                         // We can safely abort this put (assuming the other thread doesn't crash).
                         fileLock.writeLock().unlock();
-                        return true; // Not really true but... 
+                        return StatusType.PUT_UPDATE; // Not really true but... 
                     }
 
                     boolean write = writeToFile(key, value);
                     fileLock.writeLock().unlock();
-                    return write; 
+                    return write ? StatusType.PUT_UPDATE : StatusType.PUT_ERROR; 
                 }
             } catch (NullPointerException npe) {
                 // Will go here if the the key is null.
@@ -131,7 +141,7 @@ public class Storage {
                 if (fileLock != null) {
                     fileLock.writeLock().unlock();
                 }
-                return false; 
+                return StatusType.PUT_ERROR; 
             }
         } else {    // key exists in the hash map
             rwLock.writeLock().lock();
@@ -140,21 +150,21 @@ public class Storage {
                 // Another thread came after and was either a delete or another put.
                 // We can safely abort this put (assuming the other thread doesn't crash).
                 rwLock.writeLock().unlock();
-                return true; // Not really true but...
+                return StatusType.PUT_UPDATE; // Not really true but...
             }
             
             boolean write = writeToFile(key, value);
             rwLock.writeLock().unlock();
-            return write;
+            return write ? StatusType.PUT_UPDATE : StatusType.PUT_ERROR;
         }
     }
 
-    public boolean delete(String key) {
+    public StatusType delete(String key) {
         ReadWriteLock rwLock = fileLocks.get(key);
 
         // Key does not exist.
-        if (rwLock == null) {
-            return false; //Should probably return that key does not exist
+        if ((rwLock == null) || (key == null)) {
+            return StatusType.DELETE_ERROR; //Should probably return that key does not exist
         }
 
 
@@ -164,7 +174,7 @@ public class Storage {
             // Another thread came after and either deleted or added something.
             // This delete can be aborted safely (assuming the other thread doesn't crash). 
             rwLock.writeLock().unlock(); 
-            return true; // Technically not true but...               
+            return StatusType.DELETE_SUCCESS; // Technically not true but...               
         }
 
         try {
@@ -177,14 +187,14 @@ public class Storage {
             try {
                 fileLocks.remove(key);
                 rwLock.writeLock().unlock();
-                return true;
+                return StatusType.DELETE_SUCCESS;
             } catch (NullPointerException npe) {    // Shouldn't go here as long as key is not null
                 rwLock.writeLock().unlock();
-                return false;
+                return StatusType.DELETE_ERROR;
             }
         } catch (SecurityException se) {
             rwLock.writeLock().unlock();
-            return false;
+            return StatusType.DELETE_ERROR;
         }
     }
 }
