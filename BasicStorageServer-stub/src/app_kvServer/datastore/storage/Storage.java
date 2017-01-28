@@ -154,7 +154,7 @@ public class Storage {
 
         // Key does not exist.
         if (rwLock == null) {
-            return true; //Should probably return that key does not exist
+            return false; //Should probably return that key does not exist
         }
 
 
@@ -173,11 +173,9 @@ public class Storage {
             
             // Return value of delete() does not matter.
             file.delete();
-    
             // Now we can delete the keys from both the fileLocks and writerLocks maps.
             try {
                 fileLocks.remove(key);
-
                 rwLock.writeLock().unlock();
                 return true;
             } catch (NullPointerException npe) {    // Shouldn't go here as long as key is not null
