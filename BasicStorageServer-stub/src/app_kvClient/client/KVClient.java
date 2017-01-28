@@ -121,6 +121,10 @@ public class KVClient extends Thread {
         sendMessage(KVMessage.createPutRequest(key, value));
     }
 
+    public void delete(String key) throws IOException {
+        sendMessage(KVMessage.createDeleteRequest(key));
+    }
+
 	/**
 	 * Method sends a Message using this socket.
 	 * @param msg the message that is to be sent.

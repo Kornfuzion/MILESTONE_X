@@ -41,7 +41,7 @@ public class Application implements ClientSocketListener {
         }
     }
     
-    private void handleCommand(String cmdLine) {
+    private void handleCommand(String cmdLine) throws IOException {
         String[] tokens = cmdLine.split("\\s+");
 
         if(tokens[0].equals("quit")) {  
@@ -86,7 +86,38 @@ public class Application implements ClientSocketListener {
             } else {
                 printError("No message passed!");
             }
+        } else  if (tokens[0].equals("get")) {
+            if(tokens.length >= 2) {
+                if(client != null && client.isRunning()){
+                    client.get(tokens[1]);
+                } else {
+                    printError("Not connected!");
+                }
+            } else {
+                printError("No key passed!");
+            }
             
+        } else  if (tokens[0].equals("put")) {
+            if(tokens.length >= 3) {
+                if(client != null && client.isRunning()){
+                    client.put(tokens[1], tokens[2]);
+                } else {
+                    printError("Not connected!");
+                }
+            } else {
+                printError("No message passed!");
+            }
+            
+        } else  if (tokens[0].equals("delete")) {
+            if(tokens.length >= 2) {
+                if(client != null && client.isRunning()){
+                    client.delete(tokens[1]);
+                } else {
+                    printError("Not connected!");
+                }
+            } else {
+                printError("No message passed!");
+            }
         } else if(tokens[0].equals("disconnect")) {
             disconnect();
             
@@ -141,8 +172,14 @@ public class Application implements ClientSocketListener {
         sb.append(PROMPT);
         sb.append("::::::::::::::::::::::::::::::::");
         sb.append("::::::::::::::::::::::::::::::::\n");
-        sb.append(PROMPT).append("connect <host> <port> <nipple>");
+        sb.append(PROMPT).append("connect <host> <port>");
         sb.append("\t establishes a connection to a server\n");
+        sb.append(PROMPT).append("get <key>");
+        sb.append("\t\t\t retrieves a key-value pair corresponding to the given <key>\n");
+        sb.append(PROMPT).append("put <key> <value>");
+        sb.append("\t\t stores a key-value pair with the given <key> <value>, or updates existing pair with key <key>\n");
+        sb.append(PROMPT).append("delete <key>");
+        sb.append("\t\t deletes a key-value pair corresponding to the given <key>\n");
         sb.append(PROMPT).append("send <text message>");
         sb.append("\t\t sends a text message to the server \n");
         sb.append(PROMPT).append("disconnect");
@@ -194,9 +231,25 @@ public class Application implements ClientSocketListener {
     }
     
     @Override
-    public void handleNewMessage(KVMessage msg) {
+    public void handleNewMessage(KVMessage message) {
         if(!stop) {
-            System.out.println(msg.getMessage());
+            CommandType command = message.getCommand();
+            String header = command.getStringName() + " [" + message.getStatus().getStringName() + "] : ";
+            String body;
+            switch (command) {
+                case CHAT:
+                    body = message.getMessage();
+                    break;
+                case GET:
+                case PUT:
+                case DELETE:
+                    body = "<KEY,VALUE> = <" + message.getKey() + "," + message.getValue() + ">";
+                    break;
+                default:
+                    body = KVMessage.EMPTY_STRING;
+                    break;
+            }
+            System.out.println(header + body);
             System.out.print(PROMPT);
         }
     }

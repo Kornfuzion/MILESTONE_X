@@ -2,6 +2,7 @@ package datastore;
 
 import cache.Cache;
 import cache.CacheManager;
+import cache.CachePolicy;
 import storage.Storage;
 
 import logger.*;
@@ -19,7 +20,7 @@ public class StorageManager {
 
     
     //constructor
-    public StorageManager(int policy, int cacheSize) {
+    public StorageManager(CachePolicy policy, int cacheSize) {
         super();
         this.cacheManager =  new CacheManager(policy, cacheSize);
         // TODO(Louis): Undo this comment when ready.
@@ -38,10 +39,6 @@ public class StorageManager {
 			logger.info("Server GET with Key: " + key);
 		}
         String s = cacheManager.get(key);
-        if(s == null){
-			logger.info("Server could not find in cache Key: " + key + " Looking into storage");
-            //do storage get
-        }
 		if(s != null)
 			logger.info("Server GET found Key, Value pair... Key: " + key + " Value: " + s);
 		else
@@ -49,23 +46,14 @@ public class StorageManager {
         return s;
     }
     public boolean set(String key, String value){
-        if(cacheManager.update(key, value)){
-			logger.info("Server PUT updated cache with Key: " + key + " Value: " + value);		
-		}
-		logger.info("Server PUT into storage... Key: " + key + " Value: " + value);		
-        //do storage update
-		return true; //take out later
-        //return false;
+        logger.info("Server PUT updated cache with Key: " + key + " Value: " + value);		
+        return cacheManager.update(key, value);
     }
     public boolean delete(String key){
-        if(cacheManager.delete(key)){
-			logger.info("Server DELETE SUCCESSFUL in cache with Key: " + key);				
-		}
-		logger.info("Server DELETE SUCCESSFUL in cache with Key: " + key);	
-        //do storage delete
-		return true;	//take it out later
-        //return false;
+        logger.info("Server DELETE in cache with Key: " + key);		
+        return cacheManager.delete(key);
     }
+
     /*
     public static void main(String[] args) {
         System.out.print("testing this shit kappa ");
@@ -78,5 +66,4 @@ public class StorageManager {
         CacheManager cacheManager3 = new CacheManager(3, 1000);
     }
 	*/
-	
 }

@@ -4,6 +4,8 @@ import common.messages.*;
 import common.messages.status.*;
 import common.messages.commands.*;
 
+import datastore.*;
+
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,13 +31,15 @@ public class ClientConnection implements Runnable {
 	private Socket clientSocket;
 	private InputStream input;
 	private OutputStream output;
+    private StorageManager storageManager;
 	
 	/**
 	 * Constructs a new CientConnection object for a given TCP socket.
 	 * @param clientSocket the Socket object for the client connection.
 	 */
-	public ClientConnection(Socket clientSocket) {
+	public ClientConnection(Socket clientSocket, StorageManager storageManager) {
 		this.clientSocket = clientSocket;
+        this.storageManager = storageManager;
 		this.isOpen = true;
 	}
 	
@@ -95,31 +99,69 @@ public class ClientConnection implements Runnable {
 				+ clientSocket.getPort() + ">: '" 
 				+"'");
     }
-	
-    private void handleRequest(KVMessage message) {
+
+    private void handleRequest(KVMessage message) throws IOException {
+        KVMessage response = null;
+        StatusType responseStatus;
         switch (message.getCommand()) {
             case GET:
-                // GET SOMETHING
-                // SEND GET RESPONSE
+                String getValue = storageManager.get(message.getKey());
+                logger.info("RECEIVED GET REQUEST");
+                if (getValue != null && getValue.length() > 0) {
+                    // GET SUCCESS
+                    responseStatus = StatusType.SUCCESS;
+                }
+                else {
+                    // GET FAIL
+                    responseStatus = StatusType.ERROR;
+                }
+                response = new KVMessage(CommandType.GET)
+                                .setKey(message.getKey())
+                                .setValue(getValue)
+                                .setStatus(responseStatus);
                 break;
             
             case PUT:
-                // PUT SOMETHING
-                // SEND RESPONSE CODE
+                logger.info("RECEIVED PUT REQUEST");
+                if (storageManager.set(message.getKey(), message.getValue())) {
+                    // PUT SUCCESS
+                    responseStatus = StatusType.SUCCESS;
+                }
+                else {
+                    // PUT ERROR
+                    responseStatus = StatusType.ERROR;
+                }
+                response = new KVMessage(CommandType.PUT)
+                                .setKey(message.getKey())
+                                .setValue(message.getValue())
+                                .setStatus(responseStatus);
                 break;
 
             case DELETE:
-                // DELETE SOMETHING
-                // SEND RESPONSE CODE
+                logger.info("RECEIVED DELETE REQUEST");
+                if (storageManager.delete(message.getKey())) {
+                    // DELETE SUCCESS
+                    responseStatus = StatusType.SUCCESS;
+                }
+                else {
+                    // DELETE ERROR
+                    responseStatus = StatusType.ERROR;
+                }
+                response = new KVMessage(CommandType.DELETE)
+                                .setKey(message.getKey())
+                                .setStatus(responseStatus);
             break;
 
-            case INVALID:
+            case CHAT:
                 // why might they be sending us this?
                 // if there is a message, print it
                 if (message.getMessage().length() > 0) {
                     logger.info("CLIENT SENT MESSAGE: " + message.getMessage());
                 }
                 break;
+        }
+        if (response != null) {
+            sendMessage(response);
         }
     }
 	

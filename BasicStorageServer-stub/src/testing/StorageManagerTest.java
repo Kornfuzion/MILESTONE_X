@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import datastore.*;
+import cache.*;
 
 import java.lang.ClassLoader;
 
@@ -16,7 +17,7 @@ public class StorageManagerTest extends TestCase {
 
 	@Before
     public void setUp() {
-        storageManager = new StorageManager(1, 10);
+        storageManager = new StorageManager(CachePolicy.LRU, 10);
 		storageManager.set("One", "One");
 		storageManager.set("Two", "Two");
    }

@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
 
+import cache.*;
 import datastore.*;
 import logger.*;
 
@@ -20,7 +21,7 @@ public class KVServer extends Thread {
 	
     private int port;
     private int cacheSize;
-    private String strategy;
+    private CachePolicy policy;
     private ServerSocket serverSocket;
     private boolean running;
 	private StorageManager storageManager;
@@ -35,18 +36,11 @@ public class KVServer extends Thread {
      *           currently not contained in the cache. Options are "FIFO", "LRU", 
      *           and "LFU".
      */
-    public KVServer(int port, int cacheSize, String strategy) {
+    public KVServer(int port, int cacheSize, String policy) {
         this.port = port;
         this.cacheSize = cacheSize;
-        this.strategy = strategy;
-		if(strategy.equals("LRU"))
-			storageManager = new StorageManager(1, cacheSize);
-		else if(strategy.equals("LFU"))
-			storageManager = new StorageManager(2, cacheSize);
-		else if(strategy.equals("FIFO"))
-			storageManager = new StorageManager(3, cacheSize);
-		else
-			logger.error("strategy is not one of the three... Strategy: " + strategy);
+        this.policy = CachePolicy.parseString(policy);
+        this.storageManager = new StorageManager(this.policy, cacheSize);
     }
 
     /**
@@ -62,7 +56,7 @@ public class KVServer extends Thread {
 	            try {
 	                Socket client = serverSocket.accept();                
 	                ClientConnection connection = 
-	                		new ClientConnection(client);
+	                		new ClientConnection(client, storageManager);
 	                new Thread(connection).start();
 	                
 	                logger.info("Connected to " 

@@ -18,11 +18,12 @@ import org.json.simple.parser.JSONParser;
  */
 
 public class KVMessage {
-
     private Logger logger = Logger.getRootLogger();
-	private static final char LINE_FEED = 0x0A;
-	private static final char RETURN = 0x0D;
-    private static final String EMPTY_STRING = "";
+
+    // Handy characters for this class
+	public static final char LINE_FEED = 0x0A;
+	public static final char RETURN = 0x0D;
+    public static final String EMPTY_STRING = "";
     
     // I know these JSON key names are a bit long, we can change them later
     // or figure out a cleaner way to list our JSON members
@@ -58,6 +59,10 @@ public class KVMessage {
      */
 	public KVMessage(CommandType command) {
         this.command = command;
+        this.key = EMPTY_STRING;
+        this.value = EMPTY_STRING;
+        this.message = EMPTY_STRING;
+        this.status = StatusType.INVALID;
 	}
 
 	/**
@@ -120,12 +125,11 @@ public class KVMessage {
             this.value = (String) jsonObject.get(VALUE_FIELD);
             this.message = (String) jsonObject.get(MESSAGE_FIELD);
             this.status = StatusType.values()
-                [Integer.valueOf(((Long) jsonObject.get(COMMAND_FIELD)).intValue())];
+                [Integer.valueOf(((Long) jsonObject.get(STATUS_FIELD)).intValue())];
         } catch (ParseException e) {
             logger.info("PARSE EXCEPTION: error parsing bytes to Message");
             e.printStackTrace();
-
-            this.command = CommandType.INVALID;
+            this.command = CommandType.CHAT;
             this.key = EMPTY_STRING;
             this.value = EMPTY_STRING;
             this.message = EMPTY_STRING;
@@ -141,8 +145,7 @@ public class KVMessage {
                     .setKey(key)
                     .setValue(EMPTY_STRING)
                     .setMessage(EMPTY_STRING)
-                    .setStatus(StatusType.REQUEST);
-        
+                    .setStatus(StatusType.INVALID);
     }
 
     public static KVMessage createPutRequest(String key, String value) {
@@ -150,15 +153,23 @@ public class KVMessage {
                     .setKey(key)
                     .setValue(value)
                     .setMessage(EMPTY_STRING)
-                    .setStatus(StatusType.REQUEST);
+                    .setStatus(StatusType.INVALID);
+    }
+
+    public static KVMessage createDeleteRequest(String key) {
+        return new KVMessage(CommandType.DELETE)
+                    .setKey(key)
+                    .setValue(EMPTY_STRING)
+                    .setMessage(EMPTY_STRING)
+                    .setStatus(StatusType.INVALID);
     }
 
     public static KVMessage createConnectionResponse(String message) {
-        return new KVMessage(CommandType.INVALID)
+        return new KVMessage(CommandType.CHAT)
                     .setKey(EMPTY_STRING)
                     .setValue(EMPTY_STRING)
                     .setMessage(message)
-                    .setStatus(StatusType.CONNECT_SUCCESS);
+                    .setStatus(StatusType.SUCCESS);
     }
 
     // Getter methods
