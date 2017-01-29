@@ -132,6 +132,10 @@ public class KVServer extends Thread {
             return false;
         }
     }
+	
+	public StorageManager getStorageManager(){
+		return this.storageManager;
+	}
     
     /**
      * Main entry point for the echo server application. 

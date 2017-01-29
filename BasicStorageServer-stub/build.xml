@@ -18,7 +18,7 @@
   <!-- Configuration for server application -->
   <property name="serverjar.file"      value="ms1-server.jar"/>
   <property name="servermanifest.file" value="SERVER_MANIFEST.MF"/>
-  <property name="servermain.class" value="app_kvServer.KVServer"/>
+  <property name="servermain.class" value="app_kvServer.PerfTest"/>
 
   <!-- path to libraries-->
   <path id="external.jars">
