@@ -40,6 +40,7 @@ public class StorageManager {
             logger.info("Server GET rejecting null key");
             return null;
         }
+
         logger.info("Server GET with Key: " + key);
 
         return storage.get(key);
@@ -69,6 +70,9 @@ public class StorageManager {
             logger.info("Server PUT rejecting null key");
             return StatusType.PUT_ERROR;
         }
+
+        logger.info("Server SET with Key: " + key + " Value: " + value);
+
         StatusType status = storage.put(key, value);
         return status;
 /*
@@ -95,6 +99,9 @@ public class StorageManager {
             logger.info("Server DELETE rejecting null key");
             return StatusType.DELETE_ERROR;
         }
+    
+        logger.info("Server DELETE with Key: " + key);
+
         StatusType status = storage.delete(key);
         return status;
 /*
