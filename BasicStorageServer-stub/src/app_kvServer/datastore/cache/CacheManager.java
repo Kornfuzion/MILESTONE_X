@@ -29,7 +29,7 @@ public class CacheManager {
         }
 	}
 	
-	public String get(String key){
+	public synchronized String get(String key){
 		String s = queue.getValue(key);
 		if(s != null){
 			return s;
@@ -39,7 +39,7 @@ public class CacheManager {
 		}
 	}
 	
-	public boolean update(String key, String value){
+	public synchronized boolean update(String key, String value){
 		if(queue.find(key)){
 			if(queue.setValue(key, value))
 				return true;
@@ -53,18 +53,18 @@ public class CacheManager {
 		return false;
 	}
 	
-	public boolean delete( String key){
+	public synchronized boolean delete( String key){
 		// Even if the return is null, that means key did not exist.
 		queue.cachePop(key);
 		return true;
 		
 	}
 	
-	public int getSize(){
+	public synchronized int getSize(){
 		return queue.getSize();
 	}
 	
-	public void printQueue(){
+	public synchronized void printQueue(){
 		queue.printQueue();
 	}
 	

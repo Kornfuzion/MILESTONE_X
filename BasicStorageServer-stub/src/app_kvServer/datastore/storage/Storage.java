@@ -87,6 +87,7 @@ public class Storage {
         }
 
         value = cacheManager.get(key);
+
         if (value != null) {    // found in cache.
             logger.info("GET: Cache hit <KEY = " + key + ", VALUE = " + value +">");
             rwLock.readLock().unlock();
@@ -110,6 +111,7 @@ public class Storage {
 
         // Does not really matter if this succeeds or not.
         boolean success = cacheManager.update(key, value);
+    
         if (success) {
             logger.info("GET: Inserted into cache  <KEY = " + key + ", VALUE = " + value + ">");
         } else {
@@ -174,6 +176,7 @@ public class Storage {
 
                     // Need to put into cache.
                     boolean success = cacheManager.update(key, value);
+                    
                     if (!success) {
                         logger.info("PUT: Failed to insert into cache <KEY = " + key + ", VALUE = " + value + ">");
                         newRWLock.writeLock().unlock();
@@ -207,6 +210,7 @@ public class Storage {
 
                     // Need to put into cache.
                     boolean success = cacheManager.update(key, value);
+
                     if (!success) {
                         logger.info("PUT: Failed to insert into cache <KEY = " + key + ", VALUE = " + value + ">");
                         fileLock.writeLock().unlock();
@@ -250,6 +254,7 @@ public class Storage {
             
             // Need to put into cache.
             boolean success = cacheManager.update(key, value);
+
             if (!success) {
                 logger.info("PUT: Failed to insert into cache <KEY = " + key + ", VALUE = " + value + ">");
                 rwLock.writeLock().unlock();
@@ -299,6 +304,7 @@ public class Storage {
 
                 // Need to delete from cache.
                 boolean success = cacheManager.delete(key);
+                
                 if (!success) {
                     logger.info("DELETE: Could not remove from cache  <KEY = " + key +">");
                     rwLock.writeLock().unlock();
