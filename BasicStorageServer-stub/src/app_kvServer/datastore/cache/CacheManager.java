@@ -54,12 +54,10 @@ public class CacheManager {
 	}
 	
 	public boolean delete( String key){
-		if(queue.cachePop(key)){
-			return true;
-		}
-		else {
-			return false;
-		}
+		// Even if the return is null, that means key did not exist.
+		queue.cachePop(key);
+		return true;
+		
 	}
 	
 	public int getSize(){

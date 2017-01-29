@@ -16,17 +16,31 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import logger.LogSetup;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 public class Storage {
 
     private CacheManager cacheManager;
     private String storagePath;
     private ConcurrentHashMap<String, ReadWriteLock> fileLocks;
 
+    private static Logger logger = Logger.getLogger(Storage.class.getName());
+
     public Storage(String storagePath, CacheManager cacheManager) throws FileNotFoundException, NullPointerException {
         this.storagePath = storagePath;
         this.cacheManager = cacheManager;
         fileLocks = new ConcurrentHashMap<String, ReadWriteLock>();
 
+        try {
+            new LogSetup("logs/server/storage.log", Level.ALL);
+        } catch (IOException e) {
+            System.out.println("Error! Unable to initialize logger!");
+            e.printStackTrace();
+            System.exit(1);
+        }
         // Read in existing keys = filename and create the RW locks
         
         File storageFolder = new File(this.storagePath);
@@ -40,12 +54,14 @@ public class Storage {
         for (File file : storageFiles) {
             if (file != null) {
                 fileLocks.putIfAbsent(file.getName(), new ReentrantReadWriteLock());
+                logger.info("Reading in KEY: " + file.getName());
             } 
         } 
     }
 
     public String get(String key) {      
         if (key == null) {
+            logger.info("GET: Illegal key <KEY = " + key +">");
             return null;
         }
 
@@ -53,8 +69,11 @@ public class Storage {
         ReadWriteLock rwLock = fileLocks.get(key);
 
         if (rwLock == null) {
+            logger.info("GET: Key does not exist <KEY = " + key + ">");
             return null; // key does not exist. Should probably return an error code as well.
         }
+
+        logger.info("GET: Key exists <KEY = " + key + ">");
         
         rwLock.readLock().lock();
         ReadWriteLock checkLock = fileLocks.get(key);
@@ -62,27 +81,41 @@ public class Storage {
         if ((checkLock == null) || (checkLock != rwLock)) {
             // Another thread came after and deleted something.
             // This read can be considered stale and return null (assuming the other thread doesn't crash). 
+            logger.info("GET: Stale read <KEY = " + key + ">"); 
             rwLock.readLock().unlock(); 
             return null; // key does not exist.               
         }
 
         value = cacheManager.get(key);
         if (value != null) {    // found in cache.
+            logger.info("GET: Cache hit <KEY = " + key + ", VALUE = " + value +">");
             rwLock.readLock().unlock();
             return value;
         }
-            
+        
+        logger.info("GET: Cache miss <KEY = " + key + ">"); 
+
         BufferedReader br = null;
         // At this point the file must exist on disk.
         try {
             br = new BufferedReader(new FileReader(storagePath + File.separator + key));
             value = br.readLine();
             br.close();
+            logger.info("GET: Value read from disk <KEY = " + key + ", VALUE = " + value + ">");
         } catch (IOException e) {
+            logger.info("GET: Failed file IO <KEY = " + key + ">");
             rwLock.readLock().unlock();
             return null; // should return error code that unexpected error happened.            
         } 
 
+        // Does not really matter if this succeeds or not.
+        boolean success = cacheManager.update(key, value);
+        if (success) {
+            logger.info("GET: Inserted into cache  <KEY = " + key + ", VALUE = " + value + ">");
+        } else {
+            logger.info("GET: Failed to insert into cache  <KEY = " + key + ", VALUE = " + value + ">");
+        }
+        
         rwLock.readLock().unlock();
         return value;                
     }
@@ -109,6 +142,7 @@ public class Storage {
 
     public StatusType put(String key, String value) {
         if ((key == null) || (value == null)) {
+            logger.info("PUT: Illegal key/value <KEY = " + key + ", VALUE = " + value + ">");
             return StatusType.PUT_ERROR;
         }
 
@@ -124,43 +158,68 @@ public class Storage {
                     if ((checkLock == null) || (checkLock != newRWLock)) {
                         // Another thread came after and was either a delete or another put.
                         // We can safely abort this put (assuming the other thread doesn't crash).
+                        logger.info("PUT: Overwritten put <KEY = " + key + ", VALUE = " + value + ">");
                         newRWLock.writeLock().unlock();
                         return StatusType.PUT_SUCCESS; // Not really true but... 
                     }
                     boolean write = writeToFile(key, value);
 
+                    if (!write) {
+                        logger.info("PUT: Failed to write to disk <KEY = " + key + ", VALUE = " + value + ">");
+                        newRWLock.writeLock().unlock();
+                        return StatusType.PUT_ERROR;
+                    }
+                    
+                    logger.info("PUT: Successfully wrote to disk <KEY = " + key + ", VALUE = " + value + ">");
+
                     // Need to put into cache.
                     boolean success = cacheManager.update(key, value);
                     if (!success) {
+                        logger.info("PUT: Failed to insert into cache <KEY = " + key + ", VALUE = " + value + ">");
                         newRWLock.writeLock().unlock();
                         return StatusType.PUT_ERROR;
                     }
 
+                    logger.info("PUT: Inserted into cache <KEY = " + key + ", VALUE = " + value + ">");
+
                     newRWLock.writeLock().unlock();
-                    return write ? StatusType.PUT_SUCCESS : StatusType.PUT_ERROR;                        
+                    return StatusType.PUT_SUCCESS;                        
                 } else { // lock already exists
                     fileLock.writeLock().lock();
                     ReadWriteLock checkLock = fileLocks.get(key);
                     if ((checkLock == null) || (checkLock != fileLock)) {
                         // Another thread came after and was either a delete or another put.
                         // We can safely abort this put (assuming the other thread doesn't crash).
+                        logger.info("PUT: Overwritten put <KEY = " + key + ", VALUE = " + value + ">");
                         fileLock.writeLock().unlock();
                         return StatusType.PUT_UPDATE; // Not really true but... 
                     }
 
                     boolean write = writeToFile(key, value);
 
-                    // Need to put into cache.
-                    boolean success = cacheManager.update(key, value);
-                    if (!success) {
+                    if (!write) {
+                        logger.info("PUT: Failed to write to disk <KEY = " + key + ", VALUE = " + value + ">");
                         fileLock.writeLock().unlock();
                         return StatusType.PUT_ERROR;   
                     }
 
+                    logger.info("PUT: Successfully wrote to disk <KEY = " + key + ", VALUE = " + value + ">");
+
+                    // Need to put into cache.
+                    boolean success = cacheManager.update(key, value);
+                    if (!success) {
+                        logger.info("PUT: Failed to insert into cache <KEY = " + key + ", VALUE = " + value + ">");
+                        fileLock.writeLock().unlock();
+                        return StatusType.PUT_ERROR;   
+                    }
+
+                    logger.info("PUT: Inserted into cache <KEY = " + key + ", VALUE = " + value + ">");
+
                     fileLock.writeLock().unlock();
-                    return write ? StatusType.PUT_UPDATE : StatusType.PUT_ERROR; 
+                    return StatusType.PUT_UPDATE; 
                 }
             } catch (NullPointerException npe) {
+                logger.info("PUT: Key should not be null <KEY = " + key + ", VALUE = " + value + ">");
                 // Will go here if the the key is null.
                 newRWLock.writeLock().unlock();
                 if (fileLock != null) {
@@ -174,29 +233,46 @@ public class Storage {
             if((checkLock == null) || (checkLock != rwLock)) {
                 // Another thread came after and was either a delete or another put.
                 // We can safely abort this put (assuming the other thread doesn't crash).
+                logger.info("PUT: Overwritten put <KEY = " + key + ", VALUE = " + value + ">");
                 rwLock.writeLock().unlock();
                 return StatusType.PUT_UPDATE; // Not really true but...
             }
             
             boolean write = writeToFile(key, value);
 
-            // Need to put into cache.
-            boolean success = cacheManager.update(key, value);
-            if (!success) {
+            if (!write) {
+                logger.info("PUT: Failed to write to disk <KEY = " + key + ", VALUE = " + value + ">");
                 rwLock.writeLock().unlock();
                 return StatusType.PUT_ERROR;
             }
 
+            logger.info("PUT: Successfully wrote to disk <KEY = " + key + ", VALUE = " + value + ">");
+            
+            // Need to put into cache.
+            boolean success = cacheManager.update(key, value);
+            if (!success) {
+                logger.info("PUT: Failed to insert into cache <KEY = " + key + ", VALUE = " + value + ">");
+                rwLock.writeLock().unlock();
+                return StatusType.PUT_ERROR;
+            }
+
+            logger.info("PUT: Inserted into cache <KEY = " + key + ", VALUE = " + value + ">");
+            
             rwLock.writeLock().unlock();
-            return write ? StatusType.PUT_UPDATE : StatusType.PUT_ERROR;
+            return StatusType.PUT_UPDATE;
         }
     }
 
     public StatusType delete(String key) {
+        if (key == null) {
+            logger.info("DELETE: Illegal key <KEY = " + key +">");
+            return StatusType.DELETE_ERROR;
+        }
         ReadWriteLock rwLock = fileLocks.get(key);
 
         // Key does not exist.
-        if ((rwLock == null) || (key == null)) {
+        if ((rwLock == null)) {
+            logger.info("DELETE: Key does not exist  <KEY = " + key +">");
             return StatusType.DELETE_ERROR; //Should probably return that key does not exist
         }
 
@@ -204,7 +280,8 @@ public class Storage {
         ReadWriteLock checkLock = fileLocks.get(key);
         if ((checkLock == null) || (checkLock != rwLock)) {
             // Another thread came after and either deleted or added something.
-            // This delete can be aborted safely (assuming the other thread doesn't crash). 
+            // This delete can be aborted safely (assuming the other thread doesn't crash).
+            logger.info("DELETE: Overwritten delete  <KEY = " + key +">"); 
             rwLock.writeLock().unlock(); 
             return StatusType.DELETE_SUCCESS; // Technically not true but...               
         }
@@ -215,6 +292,7 @@ public class Storage {
             
             // Return value of delete() does not matter.
             file.delete();
+            logger.info("DELETE: Key/Value deleted from disk  <KEY = " + key +">");
             // Now we can delete the keys from both the fileLocks and writerLocks maps.
             try {
                 fileLocks.remove(key);
@@ -222,17 +300,21 @@ public class Storage {
                 // Need to delete from cache.
                 boolean success = cacheManager.delete(key);
                 if (!success) {
+                    logger.info("DELETE: Could not remove from cache  <KEY = " + key +">");
                     rwLock.writeLock().unlock();
                     return StatusType.DELETE_ERROR;
                 }
+                logger.info("DELETE: Removed from cache  <KEY = " + key +">");
                 rwLock.writeLock().unlock();
                 return StatusType.DELETE_SUCCESS;
             } catch (NullPointerException npe) {    // Shouldn't go here as long as key is not null
+                logger.info("DELETE: Key should not be null  <KEY = " + key +">");
                 rwLock.writeLock().unlock();
                 return StatusType.DELETE_ERROR;
             }
 
         } catch (SecurityException se) {
+            logger.info("DELETE: Insufficient permissions to delete from disk  <KEY = " + key +">");
             rwLock.writeLock().unlock();
             return StatusType.DELETE_ERROR;
         }
