@@ -14,6 +14,9 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
+/**
+* Handles acceses to storage (which includes the cache).
+*/
 public class StorageManager {
    
     private CacheManager cacheManager;
@@ -21,7 +24,13 @@ public class StorageManager {
     
     private static Logger logger = Logger.getLogger(StorageManager.class.getName());
     
-    //constructor
+    /**
+    * Creates a new StorageManager with a given cache policy, cache size, and path to disk for persistent storage.
+    * @param policy The cache policy to be used for the in-memory cache.
+    * @param cacheSize The maximum number of key-value pairs that can be held in the cache.
+    * @param storageDirectory The path where a the folder "storage" will be created for persistent storage.
+    * @throws FileNotFoundException If it is unable to find the path indicated by storageDirectory.
+    */
     public StorageManager(CachePolicy policy, int cacheSize, String storageDirectory) throws FileNotFoundException {
         super();
         this.cacheManager =  new CacheManager(policy, cacheSize); 
@@ -34,7 +43,12 @@ public class StorageManager {
             System.exit(1);
         }
     }
-    
+
+    /**
+    * Retrieves a value for a specified key if the key exists.
+    * @param key The key associated with the desired value.
+    * @return The value associated with the key. Returns null if key does not exist or an error occurs. 
+    */ 
     public String get(String key) {
         if (key == null) {
             logger.info("Server GET rejecting null key");
@@ -42,29 +56,15 @@ public class StorageManager {
         }
 
         logger.info("Server GET with Key: " + key);
-
-        return storage.get(key);
-        
-/*        
-        // Check if it is in cache.
-        String s = cacheManager.get(key);
-        if(s != null) {
-            logger.info("Server CACHE HIT: GET found Key, Value pair... Key: " + key + " Value: " + s);
-            return s;
-        }
-         
-        logger.info("Server CACHE MISS: Key: " + key);
-    
-        // Check if it is on disk.
-        s = storage.get(key);
-        if (s != null) {
-            logger.info("Server GET found Key, Value pair... Key: " + key + " Value : " + s);
-        } else {
-            logger.info("Server GET Key not found: Key: " + key);
-        }
-        return s;    
-*/
+        return storage.get(key);    
     }
+
+    /**
+    * Inserts a key-value pair.
+    * @param key The key belonging to the key-value pair.
+    * @param value The value belonging to the key-value pair.
+    * @return A {@link StatusType} indicating the status of the insert opertation.
+    */
     public StatusType set(String key, String value){
         if (key == null) {
             logger.info("Server PUT rejecting null key");
@@ -75,25 +75,13 @@ public class StorageManager {
 
         StatusType status = storage.put(key, value);
         return status;
-/*
-        // Write to disk.
-        StatusType status = storage.put(key, value);
-        if (status == StatusType.PUT_ERROR) {
-            logger.info("Server PUT failed with Key: " + key + " Value: " + value);
-            return status;
-        }    
-        else {
-            logger.info("Server PUT updated disk with Key: " + key + " Value: " + value);
-        }
-        boolean cacheSuccess = cacheManager.update(key, value);
-        if (cacheSuccess) {
-            logger.info("Server PUT updated cache with Key: " + key + " Value: " + value);
-        } else {
-            logger.info("Server PUT failed update to cache with Key: " + key + " Value: " + value);
-        }
-        return status;
-*/
     }
+
+    /**
+    * Deletes a key-value pair.
+    * @param key The key belonging to the key-value pair.
+    * @return A {@link StatusType} indicating the status of the delete operation.
+    */
     public StatusType delete(String key) {
         if (key == null) {
             logger.info("Server DELETE rejecting null key");
@@ -104,37 +92,5 @@ public class StorageManager {
 
         StatusType status = storage.delete(key);
         return status;
-/*
-        // Delete from disk.
-        StatusType status = storage.delete(key);
-        if (status == StatusType.DELETE_ERROR) {
-            logger.info("Server DELETE failed with Key: " + key);
-            return status;
-        } else {
-            logger.info("Server DELETE updated disk with Key: " + key);
-        }
-
-        boolean cacheSuccess = cacheManager.delete(key);
-        if (cacheSuccess) {
-            logger.info("Server DELETE updated cache with Key: " + key);
-        } else {
-            logger.info("Server DELETE failed to update cache with Key: " + key);
-        }
-
-        return status;
-*/
     }
-
-    /*
-    public static void main(String[] args) {
-        System.out.print("testing this shit kappa ");
-        String string = "testing this string";
-        int size = string.length();
-        System.out.println(size);
-        Cache d = new Cache(0,"testing","testing");
-        CacheManager cacheManager = new CacheManager(1, 1000);
-        CacheManager cacheManager2 = new CacheManager(2, 1000);
-        CacheManager cacheManager3 = new CacheManager(3, 1000);
-    }
-    */
 }

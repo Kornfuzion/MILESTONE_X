@@ -21,6 +21,9 @@ import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+/**
+* Handles caching and persistence of key-value pairs.
+*/
 public class Storage {
 
     private CacheManager cacheManager;
@@ -29,6 +32,11 @@ public class Storage {
 
     private static Logger logger = Logger.getLogger(Storage.class.getName());
 
+    /**
+    * Creates a new Storage with a given path to persist onto disk and a cache manager.
+    * @param storagePath The path to the directory where files will be persisted onto disk.
+    * @param cacheManager The {@link CacheManager} used to cache key-value pairs in-memory. 
+    */
     public Storage(String storagePath, CacheManager cacheManager) throws FileNotFoundException, NullPointerException {
         this.storagePath = storagePath;
         this.cacheManager = cacheManager;
@@ -59,6 +67,12 @@ public class Storage {
         } 
     }
 
+    /**
+    * Gets the value associated with the given key.
+    * @param key The key associated with the desired value.
+    * @return The value associated with the key. Returns null if the key does not exist or an error
+    *         occurs reading from disk.
+    */
     public String get(String key) {      
         if (key == null) {
             logger.info("GET: Illegal key <KEY = " + key +">");
@@ -122,6 +136,7 @@ public class Storage {
         return value;                
     }
 
+
     private boolean writeToFile(String key, String value) {
         try {
             String filePath = storagePath + File.separator + key;
@@ -142,6 +157,12 @@ public class Storage {
         }
     }
 
+    /**
+    * Inserts a key-value pair into the cache and persists it onto disk.
+    * @param key The key associated with the key-value pair.
+    * @param value The value associated with the key-value pair.
+    * @return A {@link StatusType} indicating the status of the insert operation.
+    */
     public StatusType put(String key, String value) {
         if ((key == null) || (value == null)) {
             logger.info("PUT: Illegal key/value <KEY = " + key + ", VALUE = " + value + ">");
@@ -268,6 +289,11 @@ public class Storage {
         }
     }
 
+    /**
+    * Deletes the key-value pair specified by the key.
+    * @param key The key associated with the key-value pair to be deleted.
+    * @return A {@link StatusType} indicating the status of the delete operation.
+    */
     public StatusType delete(String key) {
         if (key == null) {
             logger.info("DELETE: Illegal key <KEY = " + key +">");
