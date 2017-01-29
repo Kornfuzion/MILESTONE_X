@@ -109,11 +109,11 @@ public class ClientConnection implements Runnable {
                 logger.info("RECEIVED GET REQUEST");
                 if (getValue != null && getValue.length() > 0) {
                     // GET SUCCESS
-                    responseStatus = StatusType.SUCCESS;
+                    responseStatus = StatusType.GET_SUCCESS;
                 }
                 else {
                     // GET FAIL
-                    responseStatus = StatusType.ERROR;
+                    responseStatus = StatusType.GET_ERROR;
                 }
                 response = new KVMessage(CommandType.GET)
                                 .setKey(message.getKey())
@@ -123,15 +123,7 @@ public class ClientConnection implements Runnable {
             
             case PUT:
                 logger.info("RECEIVED PUT REQUEST");
-                StatusType status = storageManager.set(message.getKey(), message.getValue());
-                if ((status == StatusType.PUT_SUCCESS) || (status == StatusType.PUT_UPDATE)) {
-                    // PUT SUCCESS
-                    responseStatus = StatusType.SUCCESS;
-                }
-                else {
-                    // PUT ERROR
-                    responseStatus = StatusType.ERROR;
-                }
+                responseStatus = storageManager.set(message.getKey(), message.getValue());
                 response = new KVMessage(CommandType.PUT)
                                 .setKey(message.getKey())
                                 .setValue(message.getValue())
@@ -140,14 +132,7 @@ public class ClientConnection implements Runnable {
 
             case DELETE:
                 logger.info("RECEIVED DELETE REQUEST");
-                if (storageManager.delete(message.getKey()) == StatusType.DELETE_SUCCESS) {
-                    // DELETE SUCCESS
-                    responseStatus = StatusType.SUCCESS;
-                }
-                else {
-                    // DELETE ERROR
-                    responseStatus = StatusType.ERROR;
-                }
+                responseStatus = storageManager.delete(message.getKey()); 
                 response = new KVMessage(CommandType.DELETE)
                                 .setKey(message.getKey())
                                 .setStatus(responseStatus);

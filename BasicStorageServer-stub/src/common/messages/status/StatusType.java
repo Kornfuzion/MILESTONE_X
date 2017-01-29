@@ -12,12 +12,9 @@ package common.messages.status;
 public enum StatusType {
     INVALID ("INVALID"), 
     SUCCESS ("SUCCESS"),
-    UPDATE ("UPDATE"),
     ERROR ("ERROR"),
-    GET ("GET"),
     GET_ERROR ("GET_ERROR"),
     GET_SUCCESS ("GET_SUCCESS"),
-    PUT ("PUT"),
     PUT_SUCCESS ("PUT_SUCCESS"),
     PUT_UPDATE ("PUT_UPDATE"),
     PUT_ERROR ("PUT_ERROR"),

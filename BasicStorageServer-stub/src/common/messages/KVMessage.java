@@ -66,9 +66,8 @@ public class KVMessage {
 	}
 
 	/**
-	 * Returns an array of bytes that represent the ASCII coded message content.
 	 * 
-	 * @return the content of this message as an array of bytes 
+	 * @return the content of this object in JSON format as an array of bytes 
 	 * 		in ASCII coding.
 	 */
 	public byte[] getSerializedBytes() {

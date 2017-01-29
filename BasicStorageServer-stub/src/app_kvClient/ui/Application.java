@@ -22,6 +22,9 @@ public class Application implements ClientSocketListener {
     private BufferedReader stdin;
     private KVClient client = null;
     private boolean stop = false;
+
+    private static final int KEY_SIZE_LIMIT = 20;
+    private static final int VALUE_SIZE_LIMIT = 120 * 1024;
     
     private String serverAddress;
     private int serverPort;
@@ -41,6 +44,15 @@ public class Application implements ClientSocketListener {
         }
     }
     
+    private boolean checkKey(String key) {
+        return key.length() <= KEY_SIZE_LIMIT; 
+    } 
+
+    private boolean checkValue(String value) {
+        return value.length() <= VALUE_SIZE_LIMIT;  
+    } 
+
+    // THIS FUNCTION IS CURRENTLY A MASSIVE CLUSTERFUCK, FIX LATER
     private void handleCommand(String cmdLine) throws IOException {
         String[] tokens = cmdLine.split("\\s+");
 
@@ -89,7 +101,12 @@ public class Application implements ClientSocketListener {
         } else  if (tokens[0].equals("get")) {
             if(tokens.length >= 2) {
                 if(client != null && client.isRunning()){
-                    client.get(tokens[1]);
+                    if (checkKey(tokens[1])) { 
+                        client.get(tokens[1]);
+                    }
+                    else {
+                        printError("Key length too long!"); 
+                    } 
                 } else {
                     printError("Not connected!");
                 }
@@ -100,14 +117,29 @@ public class Application implements ClientSocketListener {
         } else  if (tokens[0].equals("put")) {
             if(tokens.length >= 3) {
                 if(client != null && client.isRunning()){
-                    client.put(tokens[1], tokens[2]);
+                    if (checkKey(tokens[1]) && checkValue(tokens[2])) {
+                        client.put(tokens[1], tokens[2]);
+                    } 
+                    else {
+                        printError("Key/value length too long!");
+                    }
+                } else {
+                    printError("Not connected!");
+                }
+            } else if(tokens.length >= 2) {
+                if(client != null && client.isRunning()){
+                    if (checkKey(tokens[1])) {
+                        client.delete(tokens[1]);
+                    }
+                    else {
+                        printError("Key length too long!");
+                    }
                 } else {
                     printError("Not connected!");
                 }
             } else {
                 printError("No message passed!");
             }
-            
         } else  if (tokens[0].equals("delete")) {
             if(tokens.length >= 2) {
                 if(client != null && client.isRunning()){
@@ -178,10 +210,10 @@ public class Application implements ClientSocketListener {
         sb.append("\t\t\t retrieves a key-value pair corresponding to the given <key>\n");
         sb.append(PROMPT).append("put <key> <value>");
         sb.append("\t\t stores a key-value pair with the given <key> <value>, or updates existing pair with key <key>\n");
-        sb.append(PROMPT).append("delete <key>");
-        sb.append("\t\t deletes a key-value pair corresponding to the given <key>\n");
-        sb.append(PROMPT).append("send <text message>");
-        sb.append("\t\t sends a text message to the server \n");
+     // sb.append(PROMPT).append("delete <key>");
+     // sb.append("\t\t deletes a key-value pair corresponding to the given <key>\n");
+     // sb.append(PROMPT).append("send <text message>");
+     // sb.append("\t\t sends a text message to the server \n");
         sb.append(PROMPT).append("disconnect");
         sb.append("\t\t\t disconnects from the server \n");
         
@@ -230,26 +262,31 @@ public class Application implements ClientSocketListener {
         }
     }
     
+    private String bracketizeArgs(String... args) {
+        if (args.length == 0) {
+            return null; 
+        }
+        String result = "<";
+        boolean firstSet = false;
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] != null && args[i].length() > 0) {
+                if (firstSet) {
+                    result = result + ",";
+                }
+                else {
+                    firstSet = true;
+                }   
+                result = result + args[i]; 
+            }
+        }
+        return result + ">";
+    } 
+
     @Override
     public void handleNewMessage(KVMessage message) {
         if(!stop) {
-            CommandType command = message.getCommand();
-            String header = command.getStringName() + " [" + message.getStatus().getStringName() + "] : ";
-            String body;
-            switch (command) {
-                case CHAT:
-                    body = message.getMessage();
-                    break;
-                case GET:
-                case PUT:
-                case DELETE:
-                    body = "<KEY,VALUE> = <" + message.getKey() + "," + message.getValue() + ">";
-                    break;
-                default:
-                    body = KVMessage.EMPTY_STRING;
-                    break;
-            }
-            System.out.println(header + body);
+            System.out.println(message.getStatus().getStringName() + 
+                               bracketizeArgs(message.getKey(), message.getValue(), message.getMessage()));
             System.out.print(PROMPT);
         }
     }
