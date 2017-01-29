@@ -54,7 +54,6 @@ public class StorageManager {
             logger.info("Server GET rejecting null key");
             return null;
         }
-
         logger.info("Server GET with Key: " + key);
         return storage.get(key);    
     }
