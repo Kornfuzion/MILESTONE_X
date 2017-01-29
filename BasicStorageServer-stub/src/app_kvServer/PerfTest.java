@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
+import java.util.ArrayList;
 import cache.*;
 import datastore.*;
 
@@ -40,9 +41,23 @@ public class PerfTest {
 				}
 				line = reader.readLine();
 			}
+			ArrayList<Thread> threadList = new ArrayList<Thread>();
+			long startTime = System.currentTimeMillis();
 			for(int i = 0; i < numThreads ; i++){
-				new Thread(new PerfRunnable(map, storageManager)).start();		
+				Thread t = new Thread(new PerfRunnable(map, storageManager));
+				threadList.add(t);
+				t.start();		
 			}
+			for(Thread t : threadList){
+				try{
+				t.join();
+				} catch (InterruptedException e){
+					System.out.println("fucked up");				
+				}			
+			}
+			long endTime = System.currentTimeMillis();
+			long totalTime = endTime - startTime;
+			System.out.println(totalTime);
 		} catch (FileNotFoundException e) {
 			System.out.println("file not found in perf test");
 		} catch (IOException e){
