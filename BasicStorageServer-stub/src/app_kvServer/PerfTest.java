@@ -19,7 +19,7 @@ import java.io.IOException;
 public class PerfTest {
 	public static void main(String args[]){
 		System.out.println("Starting Perftest Main");
-		final int numThreads = 2;
+		final int numThreads = 25;
 		//String storagePath = System.getProperty("user.dir") + File.separator + "storage";
 		//StorageManager storageManager = new StorageManager("LRU", 100, storagePath);
 		KVServer kvs = new KVServer(2017, 50, "LRU");
