@@ -22,7 +22,7 @@ public class PerfRunnable implements Runnable{
 		for(String key : this.map.keySet()){
 			String val = this.map.get(key);
 			//do stuff here
-			if(i <= 50)
+			if(i <= 400)	//400 250 100
 				this.storageManager.set(key, val);
 			else
 				this.storageManager.get(key);
