@@ -1,7 +1,0 @@
-2017-01-09 10:40:00,749 INFO  [main] root: Connection established
-2017-01-09 10:40:00,752 INFO  [Thread-0] root: Receive message:	 'Connection to MSRG Echo server established: /127.0.0.1 / 23456'
-2017-01-09 10:40:06,349 INFO  [main] root: Send message:	 'foo'
-2017-01-09 10:40:06,349 INFO  [Thread-0] root: Receive message:	 'foo'
-2017-01-09 10:40:20,188 INFO  [main] root: try to close connection ...
-2017-01-09 10:40:20,188 INFO  [main] root: tearing down the connection ...
-2017-01-09 10:40:20,189 INFO  [main] root: connection closed!
