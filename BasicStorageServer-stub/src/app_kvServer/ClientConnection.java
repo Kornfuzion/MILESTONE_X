@@ -123,7 +123,7 @@ public class ClientConnection implements Runnable {
             
             case PUT:
                 logger.info("RECEIVED PUT REQUEST");
-                if (storageManager.set(message.getKey(), message.getValue())) {
+                if (storageManager.set(message.getKey(), message.getValue()) == StatusType.GET_SUCCESS) {
                     // PUT SUCCESS
                     responseStatus = StatusType.SUCCESS;
                 }
@@ -139,7 +139,7 @@ public class ClientConnection implements Runnable {
 
             case DELETE:
                 logger.info("RECEIVED DELETE REQUEST");
-                if (storageManager.delete(message.getKey())) {
+                if (storageManager.delete(message.getKey()) == StatusType.DELETE_SUCCESS) {
                     // DELETE SUCCESS
                     responseStatus = StatusType.SUCCESS;
                 }

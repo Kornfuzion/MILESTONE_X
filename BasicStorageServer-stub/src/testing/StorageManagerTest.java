@@ -7,6 +7,8 @@ import org.junit.Test;
 import datastore.*;
 import cache.*;
 
+import common.messages.status.StatusType;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.ClassLoader;
@@ -35,24 +37,25 @@ public class StorageManagerTest extends TestCase {
     @Test
     public void testGet(){
         String s = storageManager.get("One");
-        assertNotNull(s);
-        assertTrue(s.equals("One"));
-    }
+        assertEquals(s, "One");
+  
+        s = storageManager.get("Two");
+        assertEquals(s, "Two");
+   }
 
-    /*
     @Test
     public void testSet(){
-        assertTrue(storageManager.set("Two", "UpdatedTwo"));
+        StatusType status = storageManager.set("Two", "UpdatedTwo");
+        assertTrue(status == StatusType.PUT_UPDATE);
         String s = storageManager.get("Two");
         assertNotNull(s);
-        assertTrue(s.equals("UpdatedTwo"));
+        assertEquals(s, "UpdatedTwo");
     }
 
     @Test
     public void testDelete(){
-        assertTrue(storageManager.delete("One"));
+        assertTrue(storageManager.delete("One") == StatusType.DELETE_SUCCESS);
         String s = storageManager.get("One");
         assertNull(s);
-    }
-    */
+    } 
 }

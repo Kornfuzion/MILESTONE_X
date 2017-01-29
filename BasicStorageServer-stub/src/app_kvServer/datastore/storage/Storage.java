@@ -1,5 +1,7 @@
 package storage;
 
+import cache.CacheManager;
+
 import common.messages.status.StatusType;
 
 import java.io.BufferedReader;
@@ -16,11 +18,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Storage {
 
+    private CacheManager cacheManager;
     private String storagePath;
     private ConcurrentHashMap<String, ReadWriteLock> fileLocks;
 
-    public Storage(String storagePath) throws FileNotFoundException, NullPointerException {
+    public Storage(String storagePath, CacheManager cacheManager) throws FileNotFoundException, NullPointerException {
         this.storagePath = storagePath;
+        this.cacheManager = cacheManager;
         fileLocks = new ConcurrentHashMap<String, ReadWriteLock>();
 
         // Read in existing keys = filename and create the RW locks
@@ -61,6 +65,12 @@ public class Storage {
             rwLock.readLock().unlock(); 
             return null; // key does not exist.               
         }
+
+        value = cacheManager.get(key);
+        if (value != null) {    // found in cache.
+            rwLock.readLock().unlock();
+            return value;
+        }
             
         BufferedReader br = null;
         // At this point the file must exist on disk.
@@ -98,7 +108,7 @@ public class Storage {
     }
 
     public StatusType put(String key, String value) {
-        if ((key == value) || (value == null)) {
+        if ((key == null) || (value == null)) {
             return StatusType.PUT_ERROR;
         }
 
@@ -117,8 +127,15 @@ public class Storage {
                         newRWLock.writeLock().unlock();
                         return StatusType.PUT_SUCCESS; // Not really true but... 
                     }
-
                     boolean write = writeToFile(key, value);
+
+                    // Need to put into cache.
+                    boolean success = cacheManager.update(key, value);
+                    if (!success) {
+                        newRWLock.writeLock().unlock();
+                        return StatusType.PUT_ERROR;
+                    }
+
                     newRWLock.writeLock().unlock();
                     return write ? StatusType.PUT_SUCCESS : StatusType.PUT_ERROR;                        
                 } else { // lock already exists
@@ -132,6 +149,14 @@ public class Storage {
                     }
 
                     boolean write = writeToFile(key, value);
+
+                    // Need to put into cache.
+                    boolean success = cacheManager.update(key, value);
+                    if (!success) {
+                        fileLock.writeLock().unlock();
+                        return StatusType.PUT_ERROR;   
+                    }
+
                     fileLock.writeLock().unlock();
                     return write ? StatusType.PUT_UPDATE : StatusType.PUT_ERROR; 
                 }
@@ -154,6 +179,14 @@ public class Storage {
             }
             
             boolean write = writeToFile(key, value);
+
+            // Need to put into cache.
+            boolean success = cacheManager.update(key, value);
+            if (!success) {
+                rwLock.writeLock().unlock();
+                return StatusType.PUT_ERROR;
+            }
+
             rwLock.writeLock().unlock();
             return write ? StatusType.PUT_UPDATE : StatusType.PUT_ERROR;
         }
@@ -166,7 +199,6 @@ public class Storage {
         if ((rwLock == null) || (key == null)) {
             return StatusType.DELETE_ERROR; //Should probably return that key does not exist
         }
-
 
         rwLock.writeLock().lock();
         ReadWriteLock checkLock = fileLocks.get(key);
@@ -186,12 +218,20 @@ public class Storage {
             // Now we can delete the keys from both the fileLocks and writerLocks maps.
             try {
                 fileLocks.remove(key);
+
+                // Need to delete from cache.
+                boolean success = cacheManager.delete(key);
+                if (!success) {
+                    rwLock.writeLock().unlock();
+                    return StatusType.DELETE_ERROR;
+                }
                 rwLock.writeLock().unlock();
                 return StatusType.DELETE_SUCCESS;
             } catch (NullPointerException npe) {    // Shouldn't go here as long as key is not null
                 rwLock.writeLock().unlock();
                 return StatusType.DELETE_ERROR;
             }
+
         } catch (SecurityException se) {
             rwLock.writeLock().unlock();
             return StatusType.DELETE_ERROR;
