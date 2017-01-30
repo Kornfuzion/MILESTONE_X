@@ -46,9 +46,11 @@ public class KVMessage {
      * 
      * @param bytes the bytes that form the message in ASCII coding.
      */
-	public KVMessage(byte[] bytes) {
-		this.serializedBytes = addCtrChars(bytes);
-		parseBytesToMessage(new String(bytes));
+	public static KVMessage parse(byte[] bytes) throws Exception {
+                KVMessage message = new KVMessage(null);
+		message.serializedBytes = addCtrChars(bytes);
+		message.parseBytesToMessage(new String(bytes));
+                return message;   
 	}
 
 	/**
@@ -77,7 +79,7 @@ public class KVMessage {
 		return serializedBytes;
 	}
 	
-	private byte[] addCtrChars(byte[] bytes) {
+	private static byte[] addCtrChars(byte[] bytes) {
 		byte[] ctrBytes = new byte[]{RETURN};
 		byte[] tmp = new byte[bytes.length + ctrBytes.length];
 		
@@ -115,8 +117,7 @@ public class KVMessage {
         } 
 	}
 
-    private void parseBytesToMessage(String s) {
-        try {
+    private void parseBytesToMessage(String s) throws Exception {
             JSONObject jsonObject = (JSONObject) new JSONParser().parse(s);
             this.command = CommandType.values()
                 [Integer.valueOf(((Long) jsonObject.get(COMMAND_FIELD)).intValue())];
@@ -125,19 +126,8 @@ public class KVMessage {
             this.message = (String) jsonObject.get(MESSAGE_FIELD);
             this.status = StatusType.values()
                 [Integer.valueOf(((Long) jsonObject.get(STATUS_FIELD)).intValue())];
-        } catch (ParseException e) {
-            logger.info("PARSE EXCEPTION: error parsing bytes to Message");
-            e.printStackTrace();
-            this.command = CommandType.CHAT;
-            this.key = EMPTY_STRING;
-            this.value = EMPTY_STRING;
-            this.message = EMPTY_STRING;
-            this.status = StatusType.INVALID;
-
-            return;
-        }
-    }
-
+    } 
+ 
     // Create request methods
     public static KVMessage createGetRequest(String key) {
         return new KVMessage(CommandType.GET)

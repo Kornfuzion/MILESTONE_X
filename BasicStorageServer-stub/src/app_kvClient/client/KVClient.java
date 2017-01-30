@@ -40,7 +40,7 @@ public class KVClient extends Thread {
             try {
                 return receiveMessage();
             }
-            catch(IOException e) {
+            catch(Exception e) {
                 return null;
             }
         }
@@ -63,7 +63,7 @@ public class KVClient extends Thread {
 					for(ClientSocketListener listener : listeners) {
 						listener.handleNewMessage(latestMsg);
 					}
-				} catch (IOException ioe) {
+				} catch (Exception ioe) {
 					if(isRunning()) {
 						logger.error("Connection lost!");
 						try {
@@ -150,7 +150,7 @@ public class KVClient extends Thread {
     }
 	
 	
-	private KVMessage receiveMessage() throws IOException {
+	private KVMessage receiveMessage() throws Exception {
 		int index = 0;
 		byte[] msgBytes = null, tmp = null;
 		byte[] bufferBytes = new byte[BUFFER_SIZE];
@@ -202,7 +202,7 @@ public class KVClient extends Thread {
 		msgBytes = tmp;
 		
 		/* build final String */
-		KVMessage msg = new KVMessage(msgBytes);
+		KVMessage msg = KVMessage.parse(msgBytes);
 		return msg;
     }
 }

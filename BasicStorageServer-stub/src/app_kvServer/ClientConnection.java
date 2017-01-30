@@ -62,7 +62,7 @@ public class ClientConnection implements Runnable {
                     handleRequest(receiveMessage());
                 /* connection either terminated by the client or lost due to 
                  * network problems*/   
-                } catch (IOException ioe) {
+                } catch (Exception e) {
                     logger.error("Error! Connection lost!");
                     isOpen = false;
                 }               
@@ -100,7 +100,7 @@ public class ClientConnection implements Runnable {
                 +"'");
     }
 
-    private void handleRequest(KVMessage message) throws IOException {
+    private void handleRequest(KVMessage message) throws Exception {
         KVMessage response = null;
         StatusType responseStatus;
         switch (message.getCommand()) {
@@ -151,7 +151,7 @@ public class ClientConnection implements Runnable {
         }
     }
     
-    private KVMessage receiveMessage() throws IOException {
+    private KVMessage receiveMessage() throws Exception {
         
         int index = 0;
         byte[] msgBytes = null, tmp = null;
@@ -211,7 +211,7 @@ public class ClientConnection implements Runnable {
         msgBytes = tmp;
         
         /* build final String */
-        KVMessage msg = new KVMessage(msgBytes);
+        KVMessage msg = KVMessage.parse(msgBytes);
         logger.info("RECEIVE \t<" 
                 + clientSocket.getInetAddress().getHostAddress() + ":" 
                 + clientSocket.getPort() + ">: '" 
