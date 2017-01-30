@@ -28,13 +28,22 @@ public class KVClient extends Thread {
 	
 	
 	public KVClient(String address, int port) 
-			throws UnknownHostException, IOException {
+			throws UnknownHostException, IllegalArgumentException, IOException {
 		
 		clientSocket = new Socket(address, port);
 		listeners = new HashSet<ClientSocketListener>();
 		setRunning(true);
 		logger.info("Connection established");
 	}
+
+        public KVMessage getLatestMessage() {
+            try {
+                return receiveMessage();
+            }
+            catch(IOException e) {
+                return null;
+            }
+        }
 	
 	/**
 	 * Initializes and starts the client connection. 
@@ -113,15 +122,15 @@ public class KVClient extends Thread {
 		listeners.add(listener);
 	}
 	
-    public void get(String key) throws IOException {
+    public void get(String key) throws Exception {
         sendMessage(KVMessage.createGetRequest(key));
     }
 
-    public void put(String key, String value) throws IOException {
+    public void put(String key, String value) throws Exception {
         sendMessage(KVMessage.createPutRequest(key, value));
     }
 
-    public void delete(String key) throws IOException {
+    public void delete(String key) throws Exception {
         sendMessage(KVMessage.createDeleteRequest(key));
     }
 
