@@ -51,7 +51,9 @@ public class StorageManagerTest extends TestCase {
         //do nothing
     }
 
-
+    /**
+    * Tests when a client does a get on a key that exists.
+    */
     @Test
     public void testGetExistingKey() {
         String value = storageManager.get(testKey1);
@@ -59,6 +61,9 @@ public class StorageManagerTest extends TestCase {
         assertEquals(value, testValue1);
     }
 
+    /**
+    * Tests when a client does a get on a key that does not exist.
+    */
     @Test
     public void testGetNonExistingKey() throws IOException{
         String filePath = storagePath + File.separator + testNonExistingKey;
@@ -69,6 +74,9 @@ public class StorageManagerTest extends TestCase {
         
     }
     
+    /**
+    * Tests when a client does a put on a key that does not exist.
+    */
     @Test
     public void testPutNonExistingKey() throws IOException {
         String filePath = storagePath + File.separator + testKey2Clean;
@@ -88,6 +96,9 @@ public class StorageManagerTest extends TestCase {
         file.delete(); 
     }
 
+    /**
+    * Tests when a client does a put on an existing key.
+    */
     @Test
     public void testPutExistingKey() throws IOException {
         String filePath = storagePath + File.separator + testKey3Clean;
@@ -112,6 +123,9 @@ public class StorageManagerTest extends TestCase {
         file.delete();
     }
 
+    /** 
+    * Tests when client does a delete on an existing key.
+    */
     @Test
     public void testDeleteExistingKey() {
         String filePath = storagePath + File.separator + testKey4Clean;
@@ -126,6 +140,9 @@ public class StorageManagerTest extends TestCase {
         assertTrue((status == StatusType.DELETE_SUCCESS) && !file.exists());
     }
 
+    /**
+    * Tests when client does a delete on a key that does not exist.
+    */
     @Test
     public void testDeleteNonExistingKey() {
         String filePath = storagePath + File.separator + testNonExistingKeyClean;
