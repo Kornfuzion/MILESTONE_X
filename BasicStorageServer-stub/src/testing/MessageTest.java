@@ -44,8 +44,15 @@ public class MessageTest extends TestCase {
         for (int i = 0; i < serialized.length - 1; i++) {
             truncated[i] = serialized[i];
         }
-        KVMessage received = new KVMessage(truncated);
+        KVMessage received = null;
+        try {
+            received = KVMessage.parse(truncated);
+        }
+        catch (Exception e) {
+            assert(false);
 
+        }
+        assert(received != null); 
         assert(received.getCommand() == CommandType.GET);
         assert(received.getKey() == key);
         assert(received.getValue() == value);
