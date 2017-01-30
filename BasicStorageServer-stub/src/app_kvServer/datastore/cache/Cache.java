@@ -11,7 +11,9 @@ public class Cache {
 		this.key = key;
 		this.value = value;
 	}
-	//getters
+	/**
+	* Cache object getters
+	*/
 	public long getTimesUsed() {
 		return timesUsed;
 	}
@@ -21,7 +23,10 @@ public class Cache {
 	public String getValue() {
 		return value;
 	}
-	//setters
+
+	/**
+	* Cache object setters
+	*/
 	public void setTimesUsed(long timesUsed) {
 		this.timesUsed = timesUsed;
 	}
