@@ -44,6 +44,11 @@ public class KVClient extends Thread {
                 return null;
             }
         }
+
+        public void setupIOStreams() throws IOException {
+                        output = clientSocket.getOutputStream();
+                        input = clientSocket.getInputStream();
+        }
 	
 	/**
 	 * Initializes and starts the client connection. 
@@ -51,9 +56,7 @@ public class KVClient extends Thread {
 	 */
 	public void run() {
 		try {
-			output = clientSocket.getOutputStream();
-			input = clientSocket.getInputStream();
-			
+		        setupIOStreams();	
 			while(isRunning()) {
 				try {
 				    KVMessage latestMsg = receiveMessage();
