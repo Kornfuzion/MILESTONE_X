@@ -55,7 +55,6 @@ public class InteractionTest extends TestCase {
 		try {
 			kvClient.put(key, value);
 		} catch (Exception e) {
-                        e.printStackTrace();
 			ex = e;
 		}
 
