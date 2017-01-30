@@ -1,6 +1,6 @@
 package testing;
 
-import org.junit.Test;
+import org.junit.*;
 
 import client.KVStore;
 import junit.framework.TestCase;
@@ -10,7 +10,8 @@ import common.messages.status.*;
 public class InteractionTest extends TestCase {
 
 	private KVStore kvClient;
-	
+
+        @BeforeClass	
 	public void setUp() {
 		kvClient = new KVStore("localhost", 50000);
 		try {
@@ -26,34 +27,40 @@ public class InteractionTest extends TestCase {
 	
 	@Test
 	public void testPut() {
-		String key = "foo";
-		String value = "bar";
+		String key = "fooput";
+		String value = "barput";
 		KVMessage response = null;
 		Exception ex = null;
 
 		try {
+                        kvClient.put(key, null);
 		       	response = kvClient.put(key, value);
 		} catch (Exception e) {
+                        e.printStackTrace();
 			ex = e;
 		}
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+		assertTrue(ex == null);
+                System.out.println("jamesisgay "+ response.getStatus().getStringName());                  
+                assertTrue(response.getStatus() == StatusType.PUT_SUCCESS);
 	}
 	
 	@Test
 	public void testPutDisconnected() {
 		kvClient.disconnect();
-		String key = "foo";
-		String value = "bar";
+		String key = "fooputd";
+		String value = "barputd";
 		Exception ex = null;
 
 		try {
 			kvClient.put(key, value);
 		} catch (Exception e) {
+                        e.printStackTrace();
 			ex = e;
 		}
 
 		assertNotNull(ex);
+ 
 	}
 
 	@Test
@@ -73,8 +80,9 @@ public class InteractionTest extends TestCase {
 			ex = e;
 		}
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_UPDATE
-				&& response.getValue().equals(updatedValue));
+		assertTrue(ex == null); 
+                assertTrue(response.getStatus() == StatusType.PUT_UPDATE);
+                assertTrue(response.getValue().equals(updatedValue));
 	}
 	
 	@Test
@@ -87,7 +95,7 @@ public class InteractionTest extends TestCase {
 
 		try {
 			kvClient.put(key, value);
-			response = kvClient.put(key, "null");
+			response = kvClient.put(key, null);
 		} catch (Exception e) {
 			ex = e;
 		}
@@ -97,8 +105,8 @@ public class InteractionTest extends TestCase {
 	
 	@Test
 	public void testGet() {
-		String key = "foo";
-		String value = "bar";
+		String key = "fooget";
+		String value = "barget";
 		KVMessage response = null;
 		Exception ex = null;
 
@@ -109,7 +117,7 @@ public class InteractionTest extends TestCase {
 				ex = e;
 			}
 		
-		assertTrue(ex == null && response.getValue().equals("bar"));
+		assertTrue(ex == null && response.getValue().equals(value));
 	}
 
 	@Test

@@ -21,7 +21,10 @@ public class KVStore implements KVCommInterface {
 	@Override
 	public void connect() throws Exception {
 		// TODO Auto-generated method stub
-	        client = new KVClient(address, port);	
+	        client = new KVClient(address, port);
+                client.setupIOStreams();	
+		//discard success message
+		client.getLatestMessage();	
 	}
 
 	@Override
@@ -39,7 +42,7 @@ public class KVStore implements KVCommInterface {
 	@Override
 	public KVMessage put(String key, String value) throws Exception {
                 checkConnected();
-                if (value == null) {
+                if (value == null || value.equals("null")) {
                     client.delete(key);
                 }
                 else {

@@ -19,6 +19,7 @@ public class ConnectionTest extends TestCase {
 			kvClient.connect();
 		} catch (Exception e) {
 			ex = e;
+                        ex.printStackTrace();
 		}	
 		
 		assertNull(ex);
