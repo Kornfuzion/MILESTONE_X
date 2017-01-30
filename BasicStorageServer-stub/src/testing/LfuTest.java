@@ -58,7 +58,7 @@ public class LfuTest extends TestCase {
 	@Test
 	public void testDeleteKeyThatDoesntExist(){
 		System.out.println("Start of new Case: key doesnt exist");
-		assertFalse(cacheManager.delete("ThisKeyDoesNotExistInCache"));	
+		assertTrue(cacheManager.delete("ThisKeyDoesNotExistInCache"));	
 	}
 
 	@Test
