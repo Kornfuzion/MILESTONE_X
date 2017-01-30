@@ -20,10 +20,10 @@ import java.io.IOException;
 public class PerfTest {
 	public static void main(String args[]){
 		System.out.println("Starting Perftest Main");
-		final int numThreads = 1000;
+		final int numThreads = 500;
 		//String storagePath = System.getProperty("user.dir") + File.separator + "storage";
 		//StorageManager storageManager = new StorageManager("LRU", 100, storagePath);
-		KVServer kvs = new KVServer(2017, 128, "lfu");
+		KVServer kvs = new KVServer(2017, 512, "fifo");
 		StorageManager storageManager = kvs.getStorageManager();
 		Map map = new HashMap<String, String>();
 
@@ -52,12 +52,12 @@ public class PerfTest {
 				try{
 				t.join();
 				} catch (InterruptedException e){
-					System.out.println("fucked up");				
+					System.out.println("hit interrupt exception");				
 				}			
 			}
 			long endTime = System.currentTimeMillis();
 			long totalTime = endTime - startTime;
-			System.out.println(totalTime);
+			System.out.println("Time " + totalTime);
 		} catch (FileNotFoundException e) {
 			System.out.println("file not found in perf test");
 		} catch (IOException e){
