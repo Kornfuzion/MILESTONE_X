@@ -37,7 +37,7 @@ public class Application implements ClientSocketListener {
             try {
                 String cmdLine = stdin.readLine();
                 this.handleCommand(cmdLine);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 stop = true;
                 printError("CLI does not respond - Application terminated ");
             }
@@ -53,7 +53,7 @@ public class Application implements ClientSocketListener {
     } 
 
     // THIS FUNCTION IS CURRENTLY A MASSIVE CLUSTERFUCK, FIX LATER
-    private void handleCommand(String cmdLine) throws IOException {
+    private void handleCommand(String cmdLine) throws Exception {
         String[] tokens = cmdLine.split("\\s+");
 
         if(tokens[0].equals("quit")) {  
