@@ -117,8 +117,11 @@ public class Application implements ClientSocketListener {
         } else  if (tokens[0].equals("put")) {
             if(tokens.length >= 3) {
                 if(client != null && client.isRunning()){
-                    if (checkKey(tokens[1]) && checkValue(tokens[2])) {
-                        client.put(tokens[1], tokens[2]);
+                    String key = tokens[1];
+                    // grab the rest of the commmandline args as a solid chunk for the value
+                    String value = (cmdLine.substring(cmdLine.indexOf(key) + key.length())).trim();
+                    if (checkKey(tokens[1]) && checkValue(value)) {
+                        client.put(key, value);
                     } 
                     else {
                         printError("Key/value length too long!");

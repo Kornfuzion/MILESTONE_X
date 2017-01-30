@@ -25,14 +25,17 @@ public class StorageManagerTest extends TestCase {
     private final String testKey1 = "test1";
     private final String testValue1 = "value1"; 
     private final String testKey2 = "test2";
+    private final String testKey2Clean = "key7465737432";
     private final String testValue2 = "value2";    
     private final String testKey3 = "test3";
+    private final String testKey3Clean = "key7465737433";
     private final String testValue3 = "value3";
     private final String testKey4 = "test4";
+    private final String testKey4Clean = "key7465737434";
     private final String testValue4 = "value4";
 
-    private final String testNonExistingKey = "ThisKeyDoesNotExist";
-    
+    private final String testNonExistingKey = "This Key Does Not Exist";
+    private final String testNonExistingKeyClean = "key54686973204b657920446f6573204e6f74204578697374";
     private StorageManager storageManager;  
     private String storagePath;
 
@@ -68,7 +71,7 @@ public class StorageManagerTest extends TestCase {
     
     @Test
     public void testPutNonExistingKey() throws IOException {
-        String filePath = storagePath + File.separator + testKey2;
+        String filePath = storagePath + File.separator + testKey2Clean;
         File file = new File(filePath);
         
         // Make sure that file does not already exist.
@@ -87,7 +90,7 @@ public class StorageManagerTest extends TestCase {
 
     @Test
     public void testPutExistingKey() throws IOException {
-        String filePath = storagePath + File.separator + testKey3;
+        String filePath = storagePath + File.separator + testKey3Clean;
         File file = new File(filePath);
  
         StatusType status = storageManager.set(testKey3, testValue3);
@@ -111,7 +114,7 @@ public class StorageManagerTest extends TestCase {
 
     @Test
     public void testDeleteExistingKey() {
-        String filePath = storagePath + File.separator + testKey4;
+        String filePath = storagePath + File.separator + testKey4Clean;
         File file = new File(filePath);
         
         StatusType status = storageManager.set(testKey4, testValue4);
@@ -125,7 +128,7 @@ public class StorageManagerTest extends TestCase {
 
     @Test
     public void testDeleteNonExistingKey() {
-        String filePath = storagePath + File.separator + testNonExistingKey;
+        String filePath = storagePath + File.separator + testNonExistingKeyClean;
         File file = new File(filePath);
         StatusType status = storageManager.delete(testNonExistingKey);
         assertTrue((status == StatusType.DELETE_ERROR) && !file.exists());

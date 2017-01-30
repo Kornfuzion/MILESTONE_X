@@ -32,7 +32,7 @@ public class InteractionTest extends TestCase {
 		Exception ex = null;
 
 		try {
-			response = kvClient.put(key, value);
+		       	response = kvClient.put(key, value);
 		} catch (Exception e) {
 			ex = e;
 		}
@@ -88,7 +88,6 @@ public class InteractionTest extends TestCase {
 		try {
 			kvClient.put(key, value);
 			response = kvClient.put(key, "null");
-			
 		} catch (Exception e) {
 			ex = e;
 		}
@@ -120,7 +119,7 @@ public class InteractionTest extends TestCase {
 		Exception ex = null;
 
 		try {
-			response = kvClient.get(key);
+		        response = kvClient.get(key);
 		} catch (Exception e) {
 			ex = e;
 		}
