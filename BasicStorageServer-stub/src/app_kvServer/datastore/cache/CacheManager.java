@@ -9,7 +9,11 @@ public class CacheManager {
 	private int cacheSize;
 	private CacheQueue queue;
 	
-	//constructor
+	/**
+	* Constructor that creates a Cachemanager given the cache policy and cache size
+	* @param policy The policy type for the cache
+	* @param cacheSize The amount of objects that can be stored in the cache data structure
+	*/
 	public CacheManager(CachePolicy policy, int cacheSize) {
 		super();
 		this.policy = policy;
@@ -29,6 +33,10 @@ public class CacheManager {
         }
 	}
 	
+	/**
+	* get method that looks up the key in the cache.  If it is found we will return its corresponding value, and null if it was not found in cache.
+	* @param key The key which is used for searching for its corresponding value in cache.
+	*/
 	public synchronized String get(String key){
 		String s = queue.getValue(key);
 		if(s != null){
@@ -39,6 +47,11 @@ public class CacheManager {
 		}
 	}
 	
+	/**
+	* If it is already in cache, it updates the value to a new value, else it will add a new key,value pair to the cache.
+	* key The key string corresponding to the key,value pair
+	* value The value string corresponding to the key,value pair
+	*/
 	public synchronized boolean update(String key, String value){
 		if(queue.find(key)){
 			if(queue.setValue(key, value))
@@ -53,17 +66,26 @@ public class CacheManager {
 		return false;
 	}
 	
+	/**
+	* If the object with the corresponding key is in the cache, it will be evicted and return a true.  If it is not in the cache, it will return a false.
+	*/
 	public synchronized boolean delete( String key){
 		// Even if the return is null, that means key did not exist.
 		queue.cachePop(key);
 		return true;
 		
 	}
-	
+
+	/**
+	* Returns the current cache size
+	*/
 	public synchronized int getSize(){
 		return queue.getSize();
 	}
 	
+	/**
+	* Prints the key value pair of each cache object stored in the cache datastructure in structural order
+	*/
 	public synchronized void printQueue(){
 		queue.printQueue();
 	}

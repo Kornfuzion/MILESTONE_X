@@ -24,6 +24,9 @@ public class FifoQueue implements CacheQueue{
 		return false;
 	}
 
+	/**
+	* returns the value of corresponding key if it was found, and null if it was not.
+	*/
 	//if key is found, return the object's value, don't change its positioning in the queue.
 	@Override
 	public String getValue(String Key) {
@@ -35,6 +38,9 @@ public class FifoQueue implements CacheQueue{
 		return null;
 	}
 
+	/**
+	* Creates a new cache object for the key, value pair and inserts it into the cache.  Eviction policy is applied if the cache is full.
+	*/
 	@Override
 	public boolean cachePush(String Key, String Value) {
 		if(fifo_queue.size() < max_size){ //still have space in cache, do a simple add
@@ -60,6 +66,9 @@ public class FifoQueue implements CacheQueue{
 		return false;
 	}
 
+	/**
+	* Finds the cache object in the cache with the key string, make a deletion and returns true.  returns false if it was not found.
+	*/
 	@Override
 	public boolean cachePop(String Key) {
 		for(Cache c : fifo_queue){
@@ -71,6 +80,9 @@ public class FifoQueue implements CacheQueue{
 		return false;
 	}
 
+	/**
+	* Find the cache object in the cache with string key, if it was found, edit the value to the newValue and return true.  returns false if the key was not found.
+	*/
 	@Override
 	public boolean setValue(String Key, String newValue) {
 		for(Cache c : fifo_queue){
@@ -83,10 +95,16 @@ public class FifoQueue implements CacheQueue{
 		return false;
 	}
 
+	/**
+	* Returns the current cache size
+	*/
 	public int getSize(){
 		return fifo_queue.size();	
 	}
-	
+
+	/**
+	* Prints the key value pair of each cache object stored in the cache datastructure in structural order
+	*/
 	public void printQueue(){
 		for(int i = 0; i < fifo_queue.size() ; i++){
 			System.out.println(fifo_queue.get(i).getKey() + " " + fifo_queue.get		(i).getValue());
