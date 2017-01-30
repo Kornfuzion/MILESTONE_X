@@ -12,29 +12,26 @@ import logger.LogSetup;
 
 public class AllTests {
 
-	static {
-		try {
-			new LogSetup("logs/testing/test.log", Level.ERROR);
-			new KVServer(50000, 10, "FIFO").start();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	
-	public static Test suite() {
-		TestSuite clientSuite = new TestSuite("Basic Storage ServerTest-Suite");
+    static {
+        try {
+            new LogSetup("logs/testing/test.log", Level.ERROR);
+            new KVServer(50000, 10, "FIFO").start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    
+    public static Test suite() {
+        TestSuite clientSuite = new TestSuite("Basic Storage ServerTest-Suite");
 
-		// TODO: Uncomment the following test suites when they are implemented.
-                //clientSuite.addTestSuite(ConnectionTest.class);
-		//clientSuite.addTestSuite(InteractionTest.class); 
-		//clientSuite.addTestSuite(AdditionalTest.class); 
-
-		clientSuite.addTestSuite(LruTest.class);
-		clientSuite.addTestSuite(LfuTest.class);
-		clientSuite.addTestSuite(FifoTest.class);
-		clientSuite.addTestSuite(StorageManagerTest.class);
-		return clientSuite;
-	}
-	
+        clientSuite.addTestSuite(ConnectionTest.class);
+        clientSuite.addTestSuite(InteractionTest.class); 
+        clientSuite.addTestSuite(LruTest.class);
+        clientSuite.addTestSuite(LfuTest.class);
+        clientSuite.addTestSuite(FifoTest.class);
+        clientSuite.addTestSuite(StorageManagerTest.class);
+        return clientSuite;
+    }
+    
 }
