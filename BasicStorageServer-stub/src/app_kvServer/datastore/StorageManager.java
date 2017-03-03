@@ -5,7 +5,7 @@ import cache.CacheManager;
 import cache.CachePolicy;
 import storage.Storage;
 
-import common.messages.status.StatusType;
+import common.messages.*;
 
 import logger.*;
 

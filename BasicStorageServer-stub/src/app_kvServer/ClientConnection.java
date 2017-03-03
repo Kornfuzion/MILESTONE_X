@@ -1,8 +1,6 @@
 package app_kvServer;
 
 import common.messages.*;
-import common.messages.status.*;
-import common.messages.commands.*;
 
 import datastore.*;
 
@@ -52,7 +50,7 @@ public class ClientConnection implements Runnable {
             output = clientSocket.getOutputStream();
             input = clientSocket.getInputStream();
 
-            sendMessage(KVMessage.createConnectionResponse(
+            sendMessage(KVMessage.createChatMessage(
                     "Connection to MSRG Echo server established: " 
                     + clientSocket.getLocalAddress() + " / "
                     + clientSocket.getLocalPort()));
@@ -218,7 +216,4 @@ public class ClientConnection implements Runnable {
                 + msg.getMessage().trim() + "'");
         return msg;
     }
-    
-
-    
 }

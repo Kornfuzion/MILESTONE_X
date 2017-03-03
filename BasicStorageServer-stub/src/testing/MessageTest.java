@@ -1,8 +1,6 @@
 package testing;
 
 import common.messages.*;
-import common.messages.commands.*;
-import common.messages.status.*;
 
 import org.junit.After;
 import org.junit.Before;

@@ -12,8 +12,6 @@ import logger.LogSetup;
 
 import app_kvClient.client.*;
 import common.messages.*;
-import common.messages.commands.*;
-import common.messages.status.*;
 
 public class Application implements ClientSocketListener {
 
@@ -91,7 +89,7 @@ public class Application implements ClientSocketListener {
                             msg.append(" ");
                         }
                     }   
-                    sendMessage(msg.toString());
+                    sendChatMessage(msg.toString());
                 } else {
                     printError("Not connected!");
                 }
@@ -178,10 +176,10 @@ public class Application implements ClientSocketListener {
         }
     }
     
-    private void sendMessage(String msg) {
+    private void sendChatMessage(String msg) {
         try {
-            client.sendMessage(KVMessage.createConnectionResponse(msg));
-        } catch (IOException e) {
+            client.sendChatMessage(msg);
+        } catch (Exception e) {
             printError("Unable to send message!");
             disconnect();
         }

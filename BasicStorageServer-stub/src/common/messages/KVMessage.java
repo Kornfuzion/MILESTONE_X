@@ -1,8 +1,6 @@
 package common.messages;
 
 import common.messages.*;
-import common.messages.commands.*;
-import common.messages.status.*;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.*;
@@ -153,7 +151,7 @@ public class KVMessage {
                     .setStatus(StatusType.INVALID);
     }
 
-    public static KVMessage createConnectionResponse(String message) {
+    public static KVMessage createChatMessage(String message) {
         return new KVMessage(CommandType.CHAT)
                     .setKey(EMPTY_STRING)
                     .setValue(EMPTY_STRING)

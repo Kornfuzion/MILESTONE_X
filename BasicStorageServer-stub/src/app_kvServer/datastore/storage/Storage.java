@@ -2,7 +2,7 @@ package storage;
 
 import cache.CacheManager;
 
-import common.messages.status.StatusType;
+import common.messages.*;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

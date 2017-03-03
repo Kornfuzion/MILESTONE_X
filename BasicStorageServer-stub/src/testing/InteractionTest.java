@@ -5,7 +5,6 @@ import org.junit.*;
 import client.KVStore;
 import junit.framework.TestCase;
 import common.messages.*;
-import common.messages.status.*;
 
 public class InteractionTest extends TestCase {
 

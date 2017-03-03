@@ -1,4 +1,4 @@
-package common.messages.commands;
+package common.messages;
 
 /**
  * A public enum for server commands

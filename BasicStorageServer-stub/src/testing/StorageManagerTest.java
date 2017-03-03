@@ -7,7 +7,7 @@ import org.junit.Test;
 import datastore.StorageManager;
 import cache.*;
 
-import common.messages.status.StatusType;
+import common.messages.*;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
