@@ -82,6 +82,8 @@ public class KVMessage {
         this.status = StatusType.INVALID;
         this.clientType = ClientType.INVALID;
         this.metadata = new TreeSet<ECSNode>(new hashRingComparator());
+		this.cacheSize = 0;
+		this.cachePolicy = CachePolicy.FIFO;
 	}
 
     private String serializeMetadata(TreeSet<ECSNode> metadata) {
@@ -100,9 +102,12 @@ public class KVMessage {
         String[] serialNodes = serial.split("|");
         for (String serialNode : serialNodes) {
             String[] nodeInfo = serialNode.split(",");
-            String port = nodeInfo[0];
-            String IP = nodeInfo[1];
-            metadata.add(new ECSNode(port, IP));
+			if (nodeInfo.length >= 2) {
+		        String port = nodeInfo[0];
+		        String IP = nodeInfo[1];
+				System.out.println(nodeInfo[0] + " " + nodeInfo[1]);
+		        metadata.add(new ECSNode(port, IP));
+			}
         }
     }
 
