@@ -10,6 +10,8 @@ package common.messages;
         i.e. ClientType putCommand = ClientType.values()[2];
  */
 public enum ClientType {
+    // Invalid if not a client - e.g. message originates from server
+    INVALID ("INVALID"),
     CLIENT ("CLIENT"), 
     ECS ("ECS");
 

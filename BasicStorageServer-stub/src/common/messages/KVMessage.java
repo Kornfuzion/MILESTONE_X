@@ -1,9 +1,12 @@
 package common.messages;
 
+import app_kvEcs.*;
+import cache.*;
 import common.messages.*;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.*;
+import java.util.*;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
@@ -26,17 +29,31 @@ public class KVMessage {
     // I know these JSON key names are a bit long, we can change them later
     // or figure out a cleaner way to list our JSON members
     public static String COMMAND_FIELD = "command";
+    public static String STATUS_FIELD = "status";
+    public static String CLIENT_TYPE_FIELD = "client_type";
+
+    // Regular client fields
     public static String KEY_FIELD = "key";
     public static String VALUE_FIELD = "value";
-    public static String STATUS_FIELD = "status";
     public static String MESSAGE_FIELD = "message";
+    // ECS client fields
+    public static String METADATA_FIELD = "metadata";
+    public static String CACHE_SIZE_FIELD = "cache_size";
+    public static String CACHE_POLICY_FIELD = "cache_policy";
 
 	private byte[] serializedBytes;
+
     private CommandType command;
+    private StatusType status;
+    private ClientType clientType;
+    // For regular clients
     private String key;
     private String value;
     private String message;
-    private StatusType status;
+    // For ECS clients
+    private TreeSet<ECSNode> metadata;
+    private int cacheSize;
+    private CachePolicy cachePolicy;
 	
     /**
      * Constructs a Message object with a given array of bytes that 
@@ -63,7 +80,31 @@ public class KVMessage {
         this.value = EMPTY_STRING;
         this.message = EMPTY_STRING;
         this.status = StatusType.INVALID;
+        this.clientType = ClientType.INVALID;
+        this.metadata = new TreeSet<ECSNode>(new hashRingComparator());
 	}
+
+    private String serializeMetadata(TreeSet<ECSNode> metadata) {
+        String serial = "";
+        // Kind of hacky, but let's just serialize it as PORT,IP|PORT,IP|PORT,IP|... 
+        // in sorted order
+        for (ECSNode node : metadata) {
+            // Put the node in PORT,IP format
+            String serialNode = String.format("%s,%s|", node.getPort(), node.getIP());
+            serial = serial + serialNode;
+        }
+        return serial;
+    }
+
+    private void deserializeMetadata(String serial) {
+        String[] serialNodes = serial.split("|");
+        for (String serialNode : serialNodes) {
+            String[] nodeInfo = serialNode.split(",");
+            String port = nodeInfo[0];
+            String IP = nodeInfo[1];
+            metadata.add(new ECSNode(port, IP));
+        }
+    }
 
 	/**
 	 * 
@@ -72,7 +113,7 @@ public class KVMessage {
 	 */
 	public byte[] getSerializedBytes() {
         if (this.serializedBytes == null) {
-            this.serializedBytes = toByteArray(this.command, this.key, this.value, this.message, this.status);
+            this.serializedBytes = toByteArray();
         }
 		return serializedBytes;
 	}
@@ -87,7 +128,7 @@ public class KVMessage {
 		return tmp;		
 	}
 	
-	private byte[] toByteArray(CommandType command, String key, String value, String message, StatusType status) {
+	private byte[] toByteArray() {
         try {
             JSONObject obj = new JSONObject();
 
@@ -96,6 +137,10 @@ public class KVMessage {
             obj.put(VALUE_FIELD, value);
             obj.put(MESSAGE_FIELD, message);
             obj.put(STATUS_FIELD, status.ordinal());
+            obj.put(CLIENT_TYPE_FIELD, clientType.ordinal());
+            obj.put(METADATA_FIELD, serializeMetadata(metadata));
+            obj.put(CACHE_SIZE_FIELD, cacheSize);
+            obj.put(CACHE_POLICY_FIELD, cachePolicy.ordinal());
 
             StringWriter out = new StringWriter();
             obj.writeJSONString(out);
@@ -124,6 +169,12 @@ public class KVMessage {
             this.message = (String) jsonObject.get(MESSAGE_FIELD);
             this.status = StatusType.values()
                 [Integer.valueOf(((Long) jsonObject.get(STATUS_FIELD)).intValue())];
+            this.clientType = ClientType.values()
+                [Integer.valueOf(((Long) jsonObject.get(CLIENT_TYPE_FIELD)).intValue())];
+            deserializeMetadata((String) jsonObject.get(METADATA_FIELD));
+            this.cacheSize = Integer.valueOf(((Long) jsonObject.get(CACHE_SIZE_FIELD)).intValue());
+            this.cachePolicy = CachePolicy.values()
+                [Integer.valueOf(((Long) jsonObject.get(CACHE_POLICY_FIELD)).intValue())];
     } 
  
     // Create request methods
@@ -132,7 +183,8 @@ public class KVMessage {
                     .setKey(key)
                     .setValue(EMPTY_STRING)
                     .setMessage(EMPTY_STRING)
-                    .setStatus(StatusType.INVALID);
+                    .setStatus(StatusType.INVALID)
+                    .setClientType(ClientType.INVALID);
     }
 
     public static KVMessage createPutRequest(String key, String value) {
@@ -140,7 +192,8 @@ public class KVMessage {
                     .setKey(key)
                     .setValue(value)
                     .setMessage(EMPTY_STRING)
-                    .setStatus(StatusType.INVALID);
+                    .setStatus(StatusType.INVALID)
+                    .setClientType(ClientType.CLIENT);
     }
 
     public static KVMessage createDeleteRequest(String key) {
@@ -148,7 +201,8 @@ public class KVMessage {
                     .setKey(key)
                     .setValue(EMPTY_STRING)
                     .setMessage(EMPTY_STRING)
-                    .setStatus(StatusType.INVALID);
+                    .setStatus(StatusType.INVALID)
+                    .setClientType(ClientType.CLIENT);
     }
 
     public static KVMessage createChatMessage(String message) {
@@ -156,28 +210,45 @@ public class KVMessage {
                     .setKey(EMPTY_STRING)
                     .setValue(EMPTY_STRING)
                     .setMessage(message)
-                    .setStatus(StatusType.SUCCESS);
+                    .setStatus(StatusType.SUCCESS)
+                    .setClientType(ClientType.CLIENT);
     }
 
     // Getter methods
     public CommandType getCommand() {
-        return command;
+        return this.command;
     }
 
     public String getKey() {
-        return key;
+        return this.key;
     }
 
     public String getValue() {
-        return value;
+        return this.value;
     }   
 
     public String getMessage() {
-        return message;
+        return this.message;
     }   
 
     public StatusType getStatus() {
-        return status;
+        return this.status;
+    }
+
+    public ClientType getClientType() {
+        return this.clientType;
+    }
+    
+    public TreeSet<ECSNode> getMetadata() {
+        return this.metadata;
+    }
+
+    public int getCacheSize() {
+        return this.cacheSize;
+    }
+
+    public CachePolicy getCachePolicy() {
+        return this.cachePolicy;
     }
 
     // Setter methods
@@ -204,6 +275,26 @@ public class KVMessage {
 
     public KVMessage setStatus(StatusType status) {
         this.status = status;
+        return this;
+    }
+
+    public KVMessage setClientType(ClientType clientType) {
+        this.clientType = clientType;
+        return this;
+    }
+
+    public KVMessage setMetadata(TreeSet<ECSNode> metadata) {
+        this.metadata = metadata;
+        return this;
+    }
+
+    public KVMessage setCacheSize(int cacheSize) {
+        this.cacheSize = cacheSize;
+        return this;
+    }
+
+    public KVMessage setCachePolicy(CachePolicy cachePolicy) {
+        this.cachePolicy = cachePolicy;
         return this;
     }
 }

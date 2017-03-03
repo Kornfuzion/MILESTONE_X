@@ -1,13 +1,14 @@
 package app_kvServer;
 
 import common.messages.*;
-
 import datastore.*;
+import handlers.*;
 
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.*;
 
 import org.apache.log4j.*;
 
@@ -22,25 +23,36 @@ public class RequestConnection implements Runnable {
 
     private static Logger logger = Logger.getRootLogger();
     
-    private boolean isOpen;
-    private static final int BUFFER_SIZE = 1024;
-    private static final int DROP_SIZE = 128 * BUFFER_SIZE;
+    private boolean persistent;
     
     private Socket clientSocket;
     private InputStream input;
     private OutputStream output;
     private StorageManager storageManager;
+    private KVServer server;
+
+    private ArrayList<MessageHandler> messageHandlers;
     
     /**
      * Constructs a new RequestConnection object for a given TCP socket.
      * @param clientSocket the Socket object for the client connection.
      */
-    public RequestConnection(Socket clientSocket, StorageManager storageManager /*, Server state for ECS */) {
+    public RequestConnection(KVServer server, Socket clientSocket, StorageManager storageManager) {
+        this.server = server;
         this.clientSocket = clientSocket;
         this.storageManager = storageManager;
-        this.isOpen = true;
+        this.persistent = false;
+        addMessageHandlers();
     }
     
+    public void addMessageHandlers() {
+        messageHandlers.add(new ClientHandler(server, storageManager));
+        messageHandlers.add(new ECSHandler(this, server));
+    }
+
+    public void setPersistence(boolean isPersistent) {
+        this.persistent = isPersistent;
+    }
     /**
      * Initializes and starts the client connection. 
      * Loops until the connection is closed or aborted by the client.
@@ -56,16 +68,28 @@ public class RequestConnection implements Runnable {
                     + clientSocket.getLocalPort());
             KVMessageUtils.sendMessage(responseMessage, output);
             
-            // This is now a one-time connection, so just close the socket after we're done
-            try {
-                KVMessage receivedMessage = KVMessageUtils.receiveMessage(input);
-                
-            /* connection either terminated by the client or lost due to 
-             * network problems*/   
-            } catch (Exception e) {
-               logger.error("Error! Connection lost!");
-               isOpen = false;
-            }               
+            // This is now a one-time connection for regular clients
+            // If it's an ECS client, we'll keep the connection open
+            do {
+                try {
+                    KVMessage receivedMessage = KVMessageUtils.receiveMessage(input);
+                    KVMessage reply = null;
+                    for (MessageHandler handler : messageHandlers) {
+                        if (receivedMessage.getClientType() == handler.getClientType()) {
+                            reply = handler.handleMessage(receivedMessage);
+                        }
+                    }
+                        
+                    if (reply != null) {
+                        KVMessageUtils.sendMessage(reply, output);
+                    }
+                /* connection either terminated by the client or lost due to 
+                 * network problems*/   
+                } catch (Exception e) {
+                   logger.error("Error! Connection lost!");
+                   persistent = false;
+                }               
+            } while (persistent);
         } catch (IOException ioe) {
             logger.error("Error! Connection could not be established!", ioe);
             

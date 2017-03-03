@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
+import app_kvEcs.*;
 import cache.*;
 import datastore.*;
 import logger.*;
@@ -14,6 +15,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.util.*;
 
 /**
  * Represents a simple Echo Server implementation.
@@ -28,6 +30,7 @@ public class KVServer extends Thread {
     private ServerSocket serverSocket;
     private boolean running;
     private StorageManager storageManager;
+    private TreeSet<ECSNode> metadata;
 
     /**
      * Start KV Server at given port
@@ -39,6 +42,17 @@ public class KVServer extends Thread {
      *           currently not contained in the cache. Options are "FIFO", "LRU", 
      *           and "LFU".
      */
+    public KVServer(int port) {
+        this.port = port;
+        this.cacheSize = 0;
+        this.policy = CachePolicy.FIFO;
+        this.storageManager = null;
+        this.running = true; 
+        this.metadata = null;
+    }
+
+    // Leave this constructor as legacy, but from now on we will only be using the constructor with port number
+    // The ECS client shall start each server with its respective port and initialize through messages
     public KVServer(int port, int cacheSize, String policy) {
         this.port = port;
         this.cacheSize = cacheSize;
@@ -76,7 +90,6 @@ public class KVServer extends Thread {
      * Loops until the the server should be closed.
      */
     public void run() {
-        
         running = initializeServer();
         
         if(serverSocket != null) {
@@ -85,6 +98,7 @@ public class KVServer extends Thread {
                     Socket client = serverSocket.accept();                
                     ClientConnection connection = 
                             new ClientConnection(client, storageManager);
+                          //new RequestConnection(this, client, storageManager);
                     new Thread(connection).start();
                     
                     logger.info("Connected to " 
@@ -99,8 +113,32 @@ public class KVServer extends Thread {
         logger.info("Server stopped.");
     }
     
-    private boolean isRunning() {
+    public boolean isRunning() {
         return this.running;
+    }
+
+    public void startServer() {
+        running = true;
+    }
+
+    public void shutdownServer() {
+        stopServer();
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            logger.error("Error! " +
+                    "Unable to close socket on port: " + port, e);
+        }
+    }
+
+    // These don't do shit
+    // Essentially phantom calls - so we'll call them and reply instantly
+    public void lockWrite() {}
+    public void unlockWrite() {}
+    public void moveData() {}
+
+    public void updateMetadata(TreeSet<ECSNode> metadata) {
+        this.metadata = metadata;
     }
 
     /**
@@ -108,11 +146,38 @@ public class KVServer extends Thread {
      */
     public void stopServer(){
         running = false;
+    }
+
+    public void initKVServer(TreeSet<ECSNode> metadata, int cacheSize, CachePolicy policy) {
+        this.cacheSize = cacheSize;
+        this.policy = policy;
+        this.metadata = metadata;
+
+        String storagePath = System.getProperty("user.dir") + File.separator + "storage";
         try {
-            serverSocket.close();
-        } catch (IOException e) {
-            logger.error("Error! " +
-                    "Unable to close socket on port: " + port, e);
+            File storageFolder = new File(storagePath);
+            if (!storageFolder.exists()) {
+                if (!storageFolder.mkdir()) {
+                    System.out.println("Could not create folder " + storagePath + ". Please check your permissions.");
+                    System.exit(1);
+                }
+            } else {
+                if(!storageFolder.isDirectory()) {
+                    System.out.println(storagePath + " is detected as not a folder. Please either rename or delete the existing file.");
+                    System.exit(1);
+                }
+            }
+        } catch (SecurityException se) {
+            System.out.println("Check write permissions for " + System.getProperty("user.dir"));
+            System.exit(1);
+
+        }
+
+        try { 
+            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath);
+        } catch (FileNotFoundException fnfe) {
+            System.out.println("Could not find " + storagePath + ". Please try again");
+            System.exit(1);
         }
     }
 
@@ -149,8 +214,10 @@ public class KVServer extends Thread {
                 System.out.println("Usage: Server <port>!");
             } else {
                 int port = Integer.parseInt(args[0]);
+    
                 // TODO(James): Make it so that these can be customized.
                 new KVServer(port, 256, "FIFO").start();
+             // new KVServer(port).start() <--------------USE THIS IN THE FUTURE
             }
         } catch (IOException e) {
             System.out.println("Error! Unable to initialize logger!");
