@@ -133,7 +133,11 @@ public class ECSClient {
 			for (ECSNode node : hashRing) {
 				Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
 				// VICTOR CHANGE THIS
-				KVMessage ringMessage = new KVMessage(CommandType.INIT).setMetadata(hashRing).setCacheSize(cacheSize).setCachePolicy(CachePolicy.parseString(replacementStrategy));
+				KVMessage ringMessage = new KVMessage(CommandType.INIT)
+												.setMetadata(hashRing)
+												.setCacheSize(cacheSize)
+												.setCachePolicy(CachePolicy.parseString(replacementStrategy))
+											    .setClientType(ClientType.ECS);
 				KVMessageUtils.sendMessage(ringMessage, kvServerSocket.getOutputStream());
 				KVMessage receiveMessage = KVMessageUtils.receiveMessage(kvServerSocket.getInputStream());
 				System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
