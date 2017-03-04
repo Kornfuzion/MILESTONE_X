@@ -34,7 +34,7 @@ public class ClientHandler implements MessageHandler {
     public KVMessage handleMessage(KVMessage message) throws Exception {
         // If the server isn't supposed to be accepting user requests yet,
         // Block the request, reply with an ERROR message
-        if (!server.isRunning()) {
+        if (!server.isRunning() && server.alive()) {
            return new KVMessage(message.getCommand())
                         .setStatus(StatusType.ERROR);
         }
@@ -46,7 +46,7 @@ public class ClientHandler implements MessageHandler {
         TreeSet<ECSNode> metadata = null;
         String reply = "";
 
-        boolean reroute = !server.isSuccessor(successor);
+        boolean reroute = !server.isSuccessor(successor) || !server.alive();
         if (reroute) {
             responseStatus = StatusType.REROUTE;
             metadata = server.getMetadata();
