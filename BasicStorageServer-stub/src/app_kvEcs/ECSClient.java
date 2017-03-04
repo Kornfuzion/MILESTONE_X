@@ -272,7 +272,7 @@ public class ECSClient {
      }
 
 	public void initService(int numberOfNodes, int cacheSize, String replacementStrategy){
-		runConfig("test.config");
+		runConfig("testECSClient.config");
 		try {
 			String script = "script.sh";
 			Process p = Runtime.getRuntime().exec("hostname -f");
@@ -381,7 +381,19 @@ public class ECSClient {
 
     public TreeSet<ECSNode> getAvailableMachines() {
         return availableMachines;
-    } 
+    }
+	
+	public TreeSet<ECSNode> getHashRing(){
+		return hashRing;
+	}
+ 
+	public int getHashRingSize(){
+		return hashRing.size();	
+	}
+
+	public int getAvailableMachinesSize(){
+		return availableMachines.size(); 
+	}
 
 	public void runConfig(String fileName){
 		try{
