@@ -23,7 +23,7 @@
     <!-- Configuration for ECS application -->
   <property name="ecsjar.file"      value="ms3-ecs.jar"/>
   <property name="ecsmanifest.file" value="ECS_MANIFEST.MF"/>
-  <property name="ecsmain.class" value="app_kvEcs.ECSClient"/>
+  <property name="ecsmain.class" value="app_kvEcs.ECSClientApplication"/>
 
   <!-- path to libraries-->
   <path id="external.jars">

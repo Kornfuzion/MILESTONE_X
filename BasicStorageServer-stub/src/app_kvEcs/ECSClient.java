@@ -16,7 +16,7 @@ import java.util.LinkedHashMap;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import common.messages.*;
-
+import cache.*;
 
 
 public class ECSClient {
@@ -44,7 +44,7 @@ public class ECSClient {
 			String key = entry.getKey();
 			Socket socket = entry.getValue();
 			if(socket == null || key == null){
-				System.out.println("shits null");			
+				System.out.println("Socket or key is null");			
 			}
 			try {
 				InputStream inputStream = socket.getInputStream();
@@ -99,58 +99,55 @@ public class ECSClient {
 		return true;
 	}
 
-	public void initService(int numberOfNodes, int cacheSize, String replacementStrategy){
-		try {
-			String size = Integer.toString(cacheSize);
-			System.out.println("running script");
 		
-			// Get the hostname of the ug machine
+
+	public void initService(int numberOfNodes, int cacheSize, String replacementStrategy){
+		runConfig();
+		try {
+			String script = "script.sh";
 			Process p = Runtime.getRuntime().exec("hostname -f");
 			p.waitFor();
 			BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			String l = br.readLine();
-			if (l == null) {
+			String hostname = br.readLine();
+			if (hostname == null) {
 				System.out.println("Could not get hostname of machine. Please restart");
 				System.exit(0);
-			}			
+			}	
 
-			/*String script = "script.sh";
-			Runtime run = Runtime.getRuntime();
-		  	this.proc = run.exec(script + " " +l);*/
-		} catch (IOException e) {
+			// Starting up the KVServers.
+			for (int i = 0; i < numberOfNodes; i++) {
+				ECSNode node = availableMachines.pollFirst();
+				p = Runtime.getRuntime().exec(script + " " + hostname + " " + node.getPort());
+				p.waitFor();
+				hashRing.add(node);
+			}
+			
+			// Sleeping for 5s before trying to connect to the KVServers.
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				System.out.println(e);
+			}
+
+			// Connecting and initializing the KVServers
+			for (ECSNode node : hashRing) {
+				Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
+				// VICTOR CHANGE THIS
+				KVMessage ringMessage = new KVMessage(CommandType.INIT).setMetadata(hashRing).setCacheSize(cacheSize).setCachePolicy(CachePolicy.parseString(replacementStrategy));
+				KVMessageUtils.sendMessage(ringMessage, kvServerSocket.getOutputStream());
+				KVMessage receiveMessage = KVMessageUtils.receiveMessage(kvServerSocket.getInputStream());
+				System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+				kvServerSockets.put(node.getHashedValue(), kvServerSocket);
+
+				
+			}
+		}catch (IOException e) {
 		 	e.printStackTrace();
 		} catch (InterruptedException ie) {
 			ie.printStackTrace();
+		} catch (Exception ge) { 
+			ge.printStackTrace();
 		}
-		System.out.println("finished script");
-
-		//for actual init service
-			
-		for(int i=0; i< numberOfNodes ; i++){
-			ECSNode node = availableMachines.pollFirst();
-			Socket kvServerSocket = null;
-			try {
-				int portNumber = 0;
-				kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
-			} catch (IOException ioe) {
-				System.out.println(ioe);
-			}
-			kvServerSockets.put(node.getHashedValue(), kvServerSocket);
-			String port = node.getPort();
-			String IP = node.getIP();
-			/*System.out.println("running script");
-			String script = "script.sh ug168.eecg.utoronto.ca" + size + " " + replacementStrategy;
-			Runtime run = Runtime.getRuntime();
-			try {
-			  this.proc = run.exec(script);
-			} catch (IOException e) {
-			  e.printStackTrace();
-			}
-			System.out.println("finished script");
-			*/
-			hashRing.add(node);
-		}
-
 	}
 
 	public boolean shutDown(){
@@ -205,6 +202,38 @@ public class ECSClient {
 		return true;
 	}
 
+	int getTotalNumberOfMachines(){
+		return totalNumberOfMachines;
+	}
+
+	private void runConfig(){
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			System.out.println(e);
+		}
+		String fileName = "test.config";
+		try{
+			File file = new File (fileName);
+			FileReader fileReader = new FileReader(file);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			StringBuffer stringBuffer = new StringBuffer();
+		
+			String line;
+			while((line = bufferedReader.readLine()) != null){
+				String[] splited = line.split(" ");
+				if(splited.length < 2){
+					System.out.println("screwed up somewhere in the read file");				
+				}
+				else{
+					addToAvailableMachines(splited[0], splited[1]);
+				}
+			}
+			fileReader.close();
+		} catch (IOException e){
+			e.printStackTrace();		
+		}	
+	}
 
 	public static void main(String[] args){
 		ECSClient client = new ECSClient();
@@ -235,7 +264,7 @@ public class ECSClient {
 			e.printStackTrace();		
 		}
 		
-		client.initService(1, 1, "none");
+		client.initService(5, 1, "none");
 		client.start();
 		client.stop();
 		//populate here lois
