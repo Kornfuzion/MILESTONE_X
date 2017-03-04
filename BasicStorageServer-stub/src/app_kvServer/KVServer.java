@@ -90,15 +90,14 @@ public class KVServer extends Thread {
      * Loops until the the server should be closed.
      */
     public void run() {
-        running = initializeServer();
+        running = createSocket();
         
         if(serverSocket != null) {
             while(isRunning()){
                 try {
                     Socket client = serverSocket.accept();                
-                    ClientConnection connection = 
-                            new ClientConnection(client, storageManager);
-                          //new RequestConnection(this, client, storageManager);
+                    //ClientConnection connection = new ClientConnection(this, client, storageManager);
+                    RequestConnection connection = new RequestConnection(this, client, storageManager);
                     new Thread(connection).start();
                     
                     logger.info("Connected to " 
@@ -181,7 +180,7 @@ public class KVServer extends Thread {
         }
     }
 
-    private boolean initializeServer() {
+    private boolean createSocket() {
         logger.info("Initialize server ...");
         try {
             serverSocket = new ServerSocket(port);
@@ -214,10 +213,8 @@ public class KVServer extends Thread {
                 System.out.println("Usage: Server <port>!");
             } else {
                 int port = Integer.parseInt(args[0]);
-    
-                // TODO(James): Make it so that these can be customized.
-                new KVServer(port, 256, "FIFO").start();
-             // new KVServer(port).start() <--------------USE THIS IN THE FUTURE
+                //new KVServer(port, 256, "FIFO").start();
+                new KVServer(port).start();
             }
         } catch (IOException e) {
             System.out.println("Error! Unable to initialize logger!");
