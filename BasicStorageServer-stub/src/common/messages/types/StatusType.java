@@ -14,6 +14,7 @@ public enum StatusType {
     SUCCESS ("SUCCESS"),
     ERROR ("ERROR"),
     GET_ERROR ("GET_ERROR"),
+    REROUTE("REROUTE"),
     GET_SUCCESS ("GET_SUCCESS"),
     PUT_SUCCESS ("PUT_SUCCESS"),
     PUT_UPDATE ("PUT_UPDATE"),

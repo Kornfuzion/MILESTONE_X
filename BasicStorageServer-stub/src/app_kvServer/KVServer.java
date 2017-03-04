@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 
 import app_kvEcs.*;
 import cache.*;
+import common.*;
 import datastore.*;
 import logger.*;
 
@@ -139,6 +140,15 @@ public class KVServer extends Thread {
         this.metadata = metadata;
     }
 
+    // Return a copy of the metadata, to be safe
+    public TreeSet<ECSNode> getMetadata() {
+        return MetadataUtils.copyMetadata(this.metadata);
+    }
+
+    public boolean isSuccessor(ECSNode successor) {
+        return this.port == Integer.parseInt(successor.getPort());
+    }
+
     /**
      * Stops the server insofar that it won't listen at the given port any more.
      */
@@ -150,6 +160,10 @@ public class KVServer extends Thread {
         this.cacheSize = cacheSize;
         this.policy = policy;
         this.metadata = metadata;
+
+        for (ECSNode node : metadata) {
+            logger.info(node.getPort() + node.getIP() + node.getHashedValue());
+        }
 
         String storagePath = System.getProperty("user.dir") + File.separator + "storage";
         try {
@@ -196,10 +210,14 @@ public class KVServer extends Thread {
         }
     }
 	
-	public StorageManager getStorageManager(){
+	public StorageManager getStorageManager() {
 		return this.storageManager;
 	}
     
+    public int getPort() {
+        return this.port;
+    }
+
     /**
      * Main entry point for the echo server application. 
      * @param args contains the port number at args[0].

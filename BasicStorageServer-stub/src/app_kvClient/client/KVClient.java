@@ -1,16 +1,16 @@
 package app_kvClient.client;
 
+import common.messages.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.log4j.Logger;
 
-import common.messages.*;
 import app_kvClient.client.ClientSocketListener.SocketStatus;
 
 public class KVClient extends Thread {
@@ -25,9 +25,9 @@ public class KVClient extends Thread {
 	
 	public KVClient(String address, int port) 
 			throws UnknownHostException, IllegalArgumentException, IOException {
-		
 		clientSocket = new Socket(address, port);
 		listeners = new HashSet<ClientSocketListener>();
+        setupIOStreams();	
 		setRunning(true);
 		logger.info("Connection established");
 	}
@@ -52,7 +52,6 @@ public class KVClient extends Thread {
 	 */
 	public void run() {
 		try {
-		    setupIOStreams();	
 			while(isRunning()) {
 				try {
 				    KVMessage latestMsg = KVMessageUtils.receiveMessage(input);
@@ -68,13 +67,13 @@ public class KVClient extends Thread {
 								listener.handleStatus(
 										SocketStatus.CONNECTION_LOST);
 							}
-						} catch (IOException e) {
+						} catch (Exception e) {
 							logger.error("Unable to close connection!");
 						}
 					}
 				}				
 			}
-		} catch (IOException ioe) {
+		} catch (Exception e) {
 			logger.error("Connection could not be established!");
 			
 		} finally {
@@ -121,8 +120,12 @@ public class KVClient extends Thread {
 		listeners.add(listener);
 	}
 	
+    public void initMetadata() throws Exception {
+        KVMessageUtils.sendMessage(new KVMessage(CommandType.INIT_CLIENT_METADATA), output);
+    }
+
     public void get(String key) throws Exception {
-        System.out.println("getting key " + key);
+        System.out.println(key + (output==null));
         KVMessageUtils.sendMessage(KVMessage.createGetRequest(key), output);
     }
 

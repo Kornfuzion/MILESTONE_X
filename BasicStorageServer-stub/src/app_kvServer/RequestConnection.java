@@ -24,8 +24,6 @@ public class RequestConnection implements Runnable {
 
     private static Logger logger = Logger.getLogger(RequestConnection.class.getName());
     
-    private boolean persistent;
-    
     private Socket clientSocket;
     private InputStream input;
     private OutputStream output;
@@ -43,7 +41,6 @@ public class RequestConnection implements Runnable {
         this.clientSocket = clientSocket;
         this.storageManager = storageManager;
         this.messageHandlers = new ArrayList<MessageHandler>();
-        setPersistence(true);
         addMessageHandlers();
         try {
             new LogSetup("logs/server/server.log", Level.ALL);
@@ -57,9 +54,6 @@ public class RequestConnection implements Runnable {
         messageHandlers.add(new ECSHandler(this, server));
     }
 
-    public void setPersistence(boolean isPersistent) {
-        this.persistent = isPersistent;
-    }
     /**
      * Initializes and starts the client connection. 
      * Loops until the connection is closed or aborted by the client.
@@ -68,13 +62,9 @@ public class RequestConnection implements Runnable {
         try {
             output = clientSocket.getOutputStream();
             input = clientSocket.getInputStream();       
-
-            // Acknowledge the connection
-            //KVMessageUtils.sendMessage(KVMessage.createChatMessage("CONNECTED!!! :D c====3"), output);
     
-            // This is now a one-time connection for regular clients
-            // If it's an ECS client, we'll keep the connection open
-            do {
+            // Keep connections open, let the client close connections when metadata is stale
+            while (true) {
                 try {
                     KVMessage receivedMessage = KVMessageUtils.receiveMessage(input);
                     logger.info("SERVING REQUEST " + receivedMessage.getCommand());
@@ -94,9 +84,9 @@ public class RequestConnection implements Runnable {
                  * network problems*/   
                 } catch (Exception e) {
                    logger.error("Error! Connection lost!");
-                   persistent = false;
+                   break;
                 }               
-            } while (persistent);
+            }
         } catch (IOException ioe) {
             logger.error("Error! Connection could not be established!", ioe);
             

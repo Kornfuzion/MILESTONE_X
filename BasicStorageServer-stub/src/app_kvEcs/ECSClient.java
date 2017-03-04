@@ -52,7 +52,6 @@ public class ECSClient {
 				// Send start message to kvServer.
 				KVMessage message = new KVMessage(CommandType.START)
 										.setClientType(ClientType.ECS);
-				System.out.println(message.getCommand());
 				KVMessageUtils.sendMessage(message, outputStream);
 				KVMessage receiveMessage = KVMessageUtils.receiveMessage(inputStream);
 				if(receiveMessage == null)
@@ -137,7 +136,7 @@ public class ECSClient {
 												.setMetadata(hashRing)
 												.setCacheSize(cacheSize)
 												.setCachePolicy(CachePolicy.parseString(replacementStrategy))
-											    .setClientType(ClientType.ECS);
+											    .setClientType(ClientType.ECS);  
 				KVMessageUtils.sendMessage(ringMessage, kvServerSocket.getOutputStream());
 				KVMessage receiveMessage = KVMessageUtils.receiveMessage(kvServerSocket.getInputStream());
 				System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());

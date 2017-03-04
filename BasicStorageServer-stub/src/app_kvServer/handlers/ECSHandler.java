@@ -1,11 +1,13 @@
 package handlers;
 
 import app_kvServer.*;
+import app_kvEcs.*;
 import cache.*;
 import common.messages.*;
 import logger.*;
 
 import org.apache.log4j.*;
+import java.util.*;
 
 public class ECSHandler implements MessageHandler {
     private final ClientType type = ClientType.ECS;
@@ -28,7 +30,8 @@ public class ECSHandler implements MessageHandler {
     }
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
-        StatusType responseStatus;
+        KVMessage reply = new KVMessage(message.getCommand())
+                                .setStatus(StatusType.SUCCESS);
         switch (message.getCommand()) {
             case INIT:
                 server.initKVServer(message.getMetadata(), message.getCacheSize(), message.getCachePolicy());
@@ -60,8 +63,7 @@ public class ECSHandler implements MessageHandler {
         // Especially since the server will simply die if it fails to execute 
         // For example, in the case of initKVServer
         logger.info("REPLIED TO ECS CLIENT COMMAND [" + message.getCommand() + "] WITH STATUS [" + StatusType.SUCCESS + "]");
-        return new KVMessage(message.getCommand())
-                    .setStatus(StatusType.SUCCESS);
+        return reply;
 
     }    
 }

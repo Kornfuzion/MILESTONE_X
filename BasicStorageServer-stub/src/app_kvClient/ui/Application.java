@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.UnknownHostException;
+import java.util.*;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -11,7 +12,9 @@ import org.apache.log4j.Logger;
 import logger.LogSetup;
 
 import app_kvClient.client.*;
+import app_kvEcs.*;
 import common.messages.*;
+import common.*;
 
 public class Application implements ClientSocketListener {
 
@@ -23,10 +26,20 @@ public class Application implements ClientSocketListener {
 
     private static final int KEY_SIZE_LIMIT = 20;
     private static final int VALUE_SIZE_LIMIT = 120 * 1024;
+
+    private static String ROOT_ADDRESS = "localhost";
+    private static int ROOT_PORT = 3930;
     
+    private TreeSet<ECSNode> metadata;
+
     private String serverAddress;
     private int serverPort;
-    
+
+    public Application() {
+        this.metadata = null;
+        initMetadata();
+    }    
+
     public void run() {
         while(!stop) {
             stdin = new BufferedReader(new InputStreamReader(System.in));
@@ -36,6 +49,7 @@ public class Application implements ClientSocketListener {
                 String cmdLine = stdin.readLine();
                 this.handleCommand(cmdLine);
             } catch (Exception e) {
+                e.printStackTrace();
                 stop = true;
                 printError("CLI does not respond - Application terminated ");
             }
@@ -98,56 +112,47 @@ public class Application implements ClientSocketListener {
             }
         } else  if (tokens[0].equals("get")) {
             if(tokens.length >= 2) {
-                if(client != null && client.isRunning()){
-                    if (checkKey(tokens[1])) { 
-                        client.get(tokens[1]);
-                    }
-                    else {
-                        printError("Key length too long!"); 
-                    } 
-                } else {
-                    printError("Not connected!");
+                String key = tokens[1];
+                if (checkKey(key)) { 
+                    connectToAppropriateServer(key);
+                    client.get(key);
                 }
+                else {
+                    printError("Key length too long!"); 
+                } 
             } else {
                 printError("No key passed!");
             }
             
         } else  if (tokens[0].equals("put")) {
             if(tokens.length >= 3) {
-                if(client != null && client.isRunning()){
-                    String key = tokens[1];
-                    // grab the rest of the commmandline args as a solid chunk for the value
-                    String value = (cmdLine.substring(cmdLine.indexOf(key) + key.length())).trim();
-                    if (checkKey(tokens[1]) && checkValue(value)) {
-                        client.put(key, value);
-                    } 
-                    else {
-                        printError("Key/value length too long!");
-                    }
-                } else {
-                    printError("Not connected!");
+                String key = tokens[1];
+                // grab the rest of the commmandline args as a solid chunk for the value
+                String value = (cmdLine.substring(cmdLine.indexOf(key) + key.length())).trim();
+                if (checkKey(key) && checkValue(value)) {
+                   connectToAppropriateServer(key);
+                   client.put(key, value);
+                } 
+                else {
+                   printError("Key/value length too long!");
                 }
             } else if(tokens.length >= 2) {
-                if(client != null && client.isRunning()){
-                    if (checkKey(tokens[1])) {
-                        client.delete(tokens[1]);
-                    }
-                    else {
-                        printError("Key length too long!");
-                    }
-                } else {
-                    printError("Not connected!");
+                String key = tokens[1];
+                if (checkKey(key)) {
+                    connectToAppropriateServer(key);
+                    client.delete(key);
+                }
+                else {
+                    printError("Key length too long!");
                 }
             } else {
                 printError("No message passed!");
             }
         } else  if (tokens[0].equals("delete")) {
             if(tokens.length >= 2) {
-                if(client != null && client.isRunning()){
-                    client.delete(tokens[1]);
-                } else {
-                    printError("Not connected!");
-                }
+                String key = tokens[1];
+                connectToAppropriateServer(key);
+                client.delete(key);
             } else {
                 printError("No message passed!");
             }
@@ -199,6 +204,34 @@ public class Application implements ClientSocketListener {
         }
     }
     
+    private ECSNode getServerForKey(String key) {
+        try {
+            return MetadataUtils.getSuccessor(MetadataUtils.hash(key), metadata);
+        } catch (Exception e) {
+            //for some reason we couldn't...?
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void connectToAppropriateServer(String key) {
+        if(client == null || !client.isRunning()){
+            ECSNode server = getServerForKey(key);
+            if (server != null) {
+                try {
+                    System.out.println("FOUND SERVER PORT=" + server.getPort() + " IP = "+server.getIP());
+                    connect(server.getIP(), Integer.parseInt(server.getPort()));
+                } catch (Exception e) {
+                    //aiyah... couldn't connect for some reason
+                    e.printStackTrace();
+                }
+            }
+            else {
+                System.out.println("Hmm, strange. We couldn't find the appropriate server for key " + key);
+            }
+        }
+    }
+
     private void printHelp() {
         StringBuilder sb = new StringBuilder();
         sb.append(PROMPT).append("ECHO CLIENT HELP (Usage):\n");
@@ -284,8 +317,35 @@ public class Application implements ClientSocketListener {
     } 
 
     @Override
-    public void handleNewMessage(KVMessage message) {
+    public void handleNewMessage(KVMessage message) throws Exception {
         if(!stop) {
+            if (message.getCommand() == CommandType.INIT_CLIENT_METADATA ||
+               (message.getStatus() == StatusType.REROUTE)) {
+                    this.metadata = message.getMetadata();
+                    System.out.println("UPDATED METADATA");
+                    for (ECSNode node : metadata) {
+                        System.out.println(node.getPort() + " " + node.getIP());
+                    }
+                    disconnect();
+                    
+                    // Try again if we failed our request due to stale metadata
+                    if (message.getStatus() == StatusType.REROUTE) {
+                        String key = message.getKey();
+                        connectToAppropriateServer(key);
+
+                        switch (message.getCommand()) {
+                            case GET:
+                                client.get(key);
+                                break;
+                            case PUT:
+                                client.put(key, message.getValue());
+                                break;
+                            case DELETE:
+                                client.delete(key);
+                                break;
+                        }
+                    }
+            }
             System.out.println(message.getStatus().getStringName() + 
                                bracketizeArgs(message.getKey(), message.getValue(), message.getMessage()));
             System.out.print(PROMPT);
@@ -313,6 +373,15 @@ public class Application implements ClientSocketListener {
         System.out.println(PROMPT + "Error! " +  error);
     }
     
+    private void initMetadata() {
+        try {
+            connect(ROOT_ADDRESS, ROOT_PORT);
+            client.initMetadata();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }   
+
     /**
      * Main entry point for the echo server application. 
      * @param args contains the port number at args[0].

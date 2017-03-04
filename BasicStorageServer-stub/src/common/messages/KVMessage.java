@@ -2,6 +2,7 @@ package common.messages;
 
 import app_kvEcs.*;
 import cache.*;
+import common.*;
 import common.messages.*;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -95,17 +96,19 @@ public class KVMessage {
             String serialNode = String.format("%s,%s|", node.getPort(), node.getIP());
             serial = serial + serialNode;
         }
+        System.out.println(serial);
         return serial;
     }
 
     private void deserializeMetadata(String serial) {
-        String[] serialNodes = serial.split("|");
+        metadata.clear();
+
+        String[] serialNodes = serial.split("\\|");
         for (String serialNode : serialNodes) {
-            String[] nodeInfo = serialNode.split(",");
+            String[] nodeInfo = serialNode.split("\\,");
 			if (nodeInfo.length >= 2) {
 		        String port = nodeInfo[0];
 		        String IP = nodeInfo[1];
-				System.out.println(nodeInfo[0] + " " + nodeInfo[1]);
 		        metadata.add(new ECSNode(port, IP));
 			}
         }
@@ -289,7 +292,7 @@ public class KVMessage {
     }
 
     public KVMessage setMetadata(TreeSet<ECSNode> metadata) {
-        this.metadata = metadata;
+        this.metadata = MetadataUtils.copyMetadata(metadata);
         return this;
     }
 

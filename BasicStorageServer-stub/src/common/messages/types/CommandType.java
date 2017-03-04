@@ -11,6 +11,7 @@ package common.messages;
  */
 public enum CommandType {
     // Commands for regular clients
+    INIT_CLIENT_METADATA("INIT_CLIENT_METADATA"),
     CHAT ("CHAT"), 
     GET ("GET"), 
     PUT ("PUT"), 
