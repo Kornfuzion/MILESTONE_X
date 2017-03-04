@@ -60,6 +60,11 @@ public class ClientHandler implements MessageHandler {
             reply = "CORRECT SERVER: hashed key of [" + MetadataUtils.hash(message.getKey()) + "] served by server (port,IP) = (" + successor.getPort() + "," + successor.getIP() + ")" + " hashed at " + successor.getHashedValue();
         }
         writeLock.readLock().lock();
+        if (server.isWriteLocked()) {
+            writeLock.readLock().unlock();
+            // NEED TO SEND BACK THE FACT THAT THE SERVER IS UNDER WRITELOCK.
+        }
+        writeLock.readLock().unlock();
         switch (message.getCommand()) {
             case GET:
                 String getValue = "";
