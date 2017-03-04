@@ -3,19 +3,25 @@ package handlers;
 import app_kvServer.*;
 import common.messages.*;
 import datastore.*;
+import logger.*;
 
 import java.io.IOException;
 import org.apache.log4j.*;
 
 public class ClientHandler implements MessageHandler {
     private final ClientType type = ClientType.CLIENT;
-    private static Logger logger = Logger.getRootLogger();
+    private static Logger logger = Logger.getLogger(ClientHandler.class.getName());
     private StorageManager storageManager;
     private KVServer server;
 
     public ClientHandler(KVServer server, StorageManager storageManager) {
         this.server = server;
         this.storageManager = storageManager;
+        try {
+            new LogSetup("logs/server/server.log", Level.ALL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public ClientType getClientType() {
@@ -24,7 +30,7 @@ public class ClientHandler implements MessageHandler {
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
         // If the server isn't supposed to be accepting user requests yet,
-        // Block the request, reply with a NOT-READY message
+        // Block the request, reply with an ERROR message
         if (!server.isRunning()) {
            return new KVMessage(message.getCommand())
                         .setStatus(StatusType.ERROR);
@@ -75,6 +81,7 @@ public class ClientHandler implements MessageHandler {
                 }
                 break;
         }
+        logger.info("REPLIED TO " + message.getCommand() + " WITH STATUS " + response.getStatus());
         return response;
     }
 }

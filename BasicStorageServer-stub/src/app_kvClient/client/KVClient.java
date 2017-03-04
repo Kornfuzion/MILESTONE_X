@@ -52,7 +52,7 @@ public class KVClient extends Thread {
 	 */
 	public void run() {
 		try {
-		        setupIOStreams();	
+		    setupIOStreams();	
 			while(isRunning()) {
 				try {
 				    KVMessage latestMsg = KVMessageUtils.receiveMessage(input);
@@ -101,8 +101,8 @@ public class KVClient extends Thread {
 		setRunning(false);
 		logger.info("tearing down the connection ...");
 		if (clientSocket != null) {
-			//input.close();
-			//output.close();
+			input.close();
+			output.close();
 			clientSocket.close();
 			clientSocket = null;
 			logger.info("connection closed!");
@@ -122,6 +122,7 @@ public class KVClient extends Thread {
 	}
 	
     public void get(String key) throws Exception {
+        System.out.println("getting key " + key);
         KVMessageUtils.sendMessage(KVMessage.createGetRequest(key), output);
     }
 

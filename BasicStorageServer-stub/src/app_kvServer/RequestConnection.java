@@ -7,6 +7,7 @@ import handlers.*;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import logger.*;
 import java.net.Socket;
 import java.util.*;
 
@@ -21,7 +22,7 @@ import org.apache.log4j.*;
  */
 public class RequestConnection implements Runnable {
 
-    private static Logger logger = Logger.getRootLogger();
+    private static Logger logger = Logger.getLogger(RequestConnection.class.getName());
     
     private boolean persistent;
     
@@ -42,8 +43,13 @@ public class RequestConnection implements Runnable {
         this.clientSocket = clientSocket;
         this.storageManager = storageManager;
         this.messageHandlers = new ArrayList<MessageHandler>();
-        setPersistence(false);
+        setPersistence(true);
         addMessageHandlers();
+        try {
+            new LogSetup("logs/server/server.log", Level.ALL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     public void addMessageHandlers() {
@@ -63,11 +69,15 @@ public class RequestConnection implements Runnable {
             output = clientSocket.getOutputStream();
             input = clientSocket.getInputStream();       
 
+            // Acknowledge the connection
+            //KVMessageUtils.sendMessage(KVMessage.createChatMessage("CONNECTED!!! :D c====3"), output);
+    
             // This is now a one-time connection for regular clients
             // If it's an ECS client, we'll keep the connection open
             do {
                 try {
                     KVMessage receivedMessage = KVMessageUtils.receiveMessage(input);
+                    logger.info("SERVING REQUEST " + receivedMessage.getCommand());
                     KVMessage reply = null;
                     
                     for (MessageHandler handler : messageHandlers) {
@@ -77,6 +87,7 @@ public class RequestConnection implements Runnable {
                     }
                         
                     if (reply != null) {
+                        logger.info(reply.getCommand() + " " + reply.getStatus());
                         KVMessageUtils.sendMessage(reply, output);
                     }
                 /* connection either terminated by the client or lost due to 

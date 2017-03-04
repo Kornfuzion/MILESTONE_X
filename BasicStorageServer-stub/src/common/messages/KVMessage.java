@@ -189,7 +189,7 @@ public class KVMessage {
                     .setValue(EMPTY_STRING)
                     .setMessage(EMPTY_STRING)
                     .setStatus(StatusType.INVALID)
-                    .setClientType(ClientType.INVALID);
+                    .setClientType(ClientType.CLIENT);
     }
 
     public static KVMessage createPutRequest(String key, String value) {

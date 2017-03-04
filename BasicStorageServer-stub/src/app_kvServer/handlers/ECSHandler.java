@@ -3,17 +3,24 @@ package handlers;
 import app_kvServer.*;
 import cache.*;
 import common.messages.*;
+import logger.*;
+
 import org.apache.log4j.*;
 
 public class ECSHandler implements MessageHandler {
     private final ClientType type = ClientType.ECS;
-    private static Logger logger = Logger.getRootLogger();
+    private static Logger logger = Logger.getLogger(ECSHandler.class.getName());
     private RequestConnection requestConnection;
     private KVServer server;
 
     public ECSHandler(RequestConnection requestConnection, KVServer server) {
         this.requestConnection = requestConnection;
         this.server = server;
+        try {
+            new LogSetup("logs/server/server.log", Level.ALL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public ClientType getClientType() {
@@ -25,7 +32,6 @@ public class ECSHandler implements MessageHandler {
         switch (message.getCommand()) {
             case INIT:
                 server.initKVServer(message.getMetadata(), message.getCacheSize(), message.getCachePolicy());
-                requestConnection.setPersistence(true);
                 break;
             case START:
                 server.startServer();
@@ -53,6 +59,7 @@ public class ECSHandler implements MessageHandler {
         // For now, assume no failures possible so just return a generic success
         // Especially since the server will simply die if it fails to execute 
         // For example, in the case of initKVServer
+        logger.info("REPLIED TO ECS CLIENT COMMAND [" + message.getCommand() + "] WITH STATUS [" + StatusType.SUCCESS + "]");
         return new KVMessage(message.getCommand())
                     .setStatus(StatusType.SUCCESS);
 

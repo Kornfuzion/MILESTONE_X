@@ -47,7 +47,7 @@ public class KVServer extends Thread {
         this.cacheSize = 0;
         this.policy = CachePolicy.FIFO;
         this.storageManager = null;
-        this.running = true; 
+        this.running = false; 
         this.metadata = null;
     }
 
@@ -90,10 +90,10 @@ public class KVServer extends Thread {
      * Loops until the the server should be closed.
      */
     public void run() {
-        running = createSocket();
+        boolean run = createSocket();
         
         if(serverSocket != null) {
-            while(isRunning()){
+            while(run){
                 try {
                     Socket client = serverSocket.accept();                
                     RequestConnection connection = new RequestConnection(this, client, storageManager);
