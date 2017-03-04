@@ -10,14 +10,21 @@ import java.util.*;
 
 public class MetadataUtils {
     public static ECSNode getSuccessor(String hash, TreeSet<ECSNode> hashRing) {
+        return getSuccessor(hash, hashRing, true);
+    }
+
+    public static ECSNode getSuccessor(String hash, TreeSet<ECSNode> hashRing, boolean lessThanEqualSuccessor) {
         ECSNode successor = null;
         ECSNode first = null;
         for (ECSNode node : hashRing) {
             if (first == null) {
                 first = node;
             }
-            if (successor == null && hash.compareTo(node.getHashedValue()) <= 0) {
-                successor = node;
+            if (successor == null) {
+                if (lessThanEqualSuccessor && hash.compareTo(node.getHashedValue()) <= 0 ||
+                    !lessThanEqualSuccessor && hash.compareTo(node.getHashedValue()) < 0) {
+                    successor = node;
+                }
             }
         }
         return successor == null ? first : successor;

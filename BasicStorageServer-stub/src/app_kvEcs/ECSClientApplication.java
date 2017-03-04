@@ -119,6 +119,16 @@ public class ECSClientApplication {
 				}
 			System.out.println(PROMPT + "Application Exits!");		
 		}
+		else if(tokens[0].equals("removenode")){
+			if(tokens.length == 2 ){
+				client.removeNode(tokens[1]);
+			}
+		}
+		else if(tokens[0].equals("addnode")){
+			if(tokens.length == 4 ){
+				client.addNode(tokens[1], tokens[2], tokens[3]);
+			}	
+		}
 		else{
 			System.out.println("Unknown command");
 			//printHelp();		

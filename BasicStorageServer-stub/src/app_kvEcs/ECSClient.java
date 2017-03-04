@@ -13,11 +13,12 @@ import java.util.TreeSet;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import common.messages.*;
+import common.*;
 import cache.*;
-
 
 public class ECSClient {
 	private TreeSet<ECSNode> hashRing;
@@ -25,6 +26,8 @@ public class ECSClient {
 	private Comparator<ECSNode> comparator;	
 	private int totalNumberOfMachines;
 	private Process proc;
+
+    public static String ROOT_HOST_ADDRESS = "127.0.0.1";
 
 	// Holds the communication socket to every KVServer
 	private Map<String, Socket> kvServerSockets;
@@ -98,7 +101,175 @@ public class ECSClient {
 		return true;
 	}
 
-		
+    public void removeNode(String portString) {
+        try {
+            ECSNode removeNode = null;
+            for (ECSNode node : hashRing) {
+                if (node.getPort().equals(portString)) {
+                    removeNode = node;
+                    break;
+                }    
+            }
+
+            if (removeNode == null) {
+                // wtf we fucked up
+                return;
+            }
+
+            String hash = removeNode.getHashedValue();
+            hashRing.remove(removeNode);
+            Socket removeSocket = kvServerSockets.get(hash); 
+            ECSNode successor = MetadataUtils.getSuccessor(hash, hashRing, false);     
+
+            // Stop the node to be removed
+            KVMessage message = new KVMessage(CommandType.STOP)
+				        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, removeSocket.getOutputStream());
+		    KVMessage receiveMessage = KVMessageUtils.receiveMessage(removeSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+
+            // Lock successor
+            Socket successorSocket = kvServerSockets.get(successor.getHashedValue());
+            message = new KVMessage(CommandType.LOCK_WRITE)
+				        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, successorSocket.getOutputStream());
+		    receiveMessage = KVMessageUtils.receiveMessage(successorSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+
+            // Move data to successor
+            message = new KVMessage(CommandType.MOVE_DATA)
+				        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, removeSocket.getOutputStream());
+		    receiveMessage = KVMessageUtils.receiveMessage(removeSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+
+            // Shutdown node to be removed
+            message = new KVMessage(CommandType.SHUT_DOWN)
+				        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, removeSocket.getOutputStream());
+		    receiveMessage = KVMessageUtils.receiveMessage(removeSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+
+            // Unlock successor
+            message = new KVMessage(CommandType.UNLOCK_WRITE)
+				        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, successorSocket.getOutputStream());
+		    receiveMessage = KVMessageUtils.receiveMessage(successorSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+
+            System.out.println("*************************************************\nUPDATE ALL SERVER METADATA\n*************************************************");
+
+            // Update metadata of all other servers
+            for (ECSNode serverNode : hashRing) {
+                Socket sock = kvServerSockets.get(serverNode.getHashedValue());
+                message = new KVMessage(CommandType.UPDATE_METADATA)
+                                                .setMetadata(hashRing)
+									            .setClientType(ClientType.ECS);  
+		        KVMessageUtils.sendMessage(message, sock.getOutputStream());
+		        receiveMessage = KVMessageUtils.receiveMessage(sock.getInputStream());
+		        System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void addNode(String portString, String cacheSizeString, String cachePolicyString) {
+        try {
+            int port = Integer.parseInt(portString);
+            int cacheSize = Integer.parseInt(cacheSizeString);
+            CachePolicy cachePolicy = CachePolicy.parseString(cachePolicyString);
+
+            String script = "script.sh";
+		    Process p = Runtime.getRuntime().exec("hostname -f");
+		    p.waitFor();
+		    BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+		    String hostname = br.readLine();
+		    if (hostname == null) {
+			    System.out.println("Could not get hostname of machine. Please restart");
+			    System.exit(0);
+		    }	
+
+		    ECSNode node = new ECSNode(Integer.toString(port), ROOT_HOST_ADDRESS);
+            ECSNode successor = MetadataUtils.getSuccessor(node.getHashedValue(), hashRing, false);
+            Socket successorSocket = kvServerSockets.get(successor.getHashedValue());
+		    p = Runtime.getRuntime().exec(script + " " + hostname + " " + port);
+		    p.waitFor();
+		    hashRing.add(node);
+
+		    try {
+			    Thread.sleep(5000);
+		    } catch (InterruptedException e) {
+			    System.out.println(e);
+		    }
+
+            System.out.println("*************************************************\nLAUNCH AND INIT NEW SERVER\n*************************************************");
+
+            Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
+
+		    // VICTOR CHANGE THIS
+		    KVMessage message = new KVMessage(CommandType.INIT)
+										    .setMetadata(hashRing)
+										    .setCacheSize(cacheSize)
+										    .setCachePolicy(cachePolicy)
+									        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, kvServerSocket.getOutputStream());
+		    KVMessage receiveMessage = KVMessageUtils.receiveMessage(kvServerSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+		    kvServerSockets.put(node.getHashedValue(), kvServerSocket);
+
+            System.out.println("*************************************************\nSTART NEW SERVER\n*************************************************");
+
+            // Start the new server
+            message = new KVMessage(CommandType.START)
+								        .setClientType(ClientType.ECS);
+		    KVMessageUtils.sendMessage(message, kvServerSocket.getOutputStream());
+		    receiveMessage = KVMessageUtils.receiveMessage(kvServerSocket.getInputStream());
+            System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+
+            System.out.println("*************************************************\nLOCK WRITE SUCCESSOR\n*************************************************");
+
+            // Lock successor
+            message = new KVMessage(CommandType.LOCK_WRITE)
+				        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, successorSocket.getOutputStream());
+		    receiveMessage = KVMessageUtils.receiveMessage(successorSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+
+            System.out.println("*************************************************\nMOVE SUCCESSOR DATA\n*************************************************");
+
+            // Move data
+            message = new KVMessage(CommandType.MOVE_DATA)
+				        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, successorSocket.getOutputStream());
+		    receiveMessage = KVMessageUtils.receiveMessage(successorSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+            
+            System.out.println("*************************************************\nUNLOCK WRITE SUCCESSOR \n*************************************************");
+
+            // Unlock successor
+            message = new KVMessage(CommandType.UNLOCK_WRITE)
+				        .setClientType(ClientType.ECS);  
+		    KVMessageUtils.sendMessage(message, successorSocket.getOutputStream());
+		    receiveMessage = KVMessageUtils.receiveMessage(successorSocket.getInputStream());
+		    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+
+            System.out.println("*************************************************\nUPDATE ALL SERVER METADATA\n*************************************************");
+
+            // Update metadata of all other servers
+            for (ECSNode serverNode : hashRing) {
+                Socket sock = kvServerSockets.get(serverNode.getHashedValue());
+                message = new KVMessage(CommandType.UPDATE_METADATA)
+                                                .setMetadata(hashRing)
+									            .setClientType(ClientType.ECS);  
+		        KVMessageUtils.sendMessage(message, sock.getOutputStream());
+		        receiveMessage = KVMessageUtils.receiveMessage(sock.getInputStream());
+		        System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+     }
 
 	public void initService(int numberOfNodes, int cacheSize, String replacementStrategy){
 		runConfig();
