@@ -9,6 +9,8 @@ import logger.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.log4j.*;
 
 public class ClientHandler implements MessageHandler {
@@ -16,9 +18,11 @@ public class ClientHandler implements MessageHandler {
     private static Logger logger = Logger.getLogger(ClientHandler.class.getName());
     private StorageManager storageManager;
     private KVServer server;
+    private ReadWriteLock writeLock; 
 
-    public ClientHandler(KVServer server, StorageManager storageManager) {
+    public ClientHandler(KVServer server, ReadWriteLock writeLock, StorageManager storageManager) {
         this.server = server;
+        this.writeLock = writeLock;
         this.storageManager = storageManager;
         try {
             new LogSetup("logs/server/server.log", Level.ALL);
@@ -55,6 +59,7 @@ public class ClientHandler implements MessageHandler {
         else {
             reply = "CORRECT SERVER: hashed key of [" + MetadataUtils.hash(message.getKey()) + "] served by server (port,IP) = (" + successor.getPort() + "," + successor.getIP() + ")" + " hashed at " + successor.getHashedValue();
         }
+        writeLock.readLock().lock();
         switch (message.getCommand()) {
             case GET:
                 String getValue = "";
@@ -70,7 +75,6 @@ public class ClientHandler implements MessageHandler {
                         responseStatus = StatusType.GET_ERROR;
                     }
                 }
-
                 response
                     .setKey(message.getKey())
                     .setValue(getValue)

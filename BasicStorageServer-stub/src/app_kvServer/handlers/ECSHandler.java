@@ -8,6 +8,8 @@ import logger.*;
 
 import org.apache.log4j.*;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ECSHandler implements MessageHandler {
     private final ClientType type = ClientType.ECS;

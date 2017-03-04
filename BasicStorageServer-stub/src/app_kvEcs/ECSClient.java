@@ -101,7 +101,7 @@ public class ECSClient {
 		
 
 	public void initService(int numberOfNodes, int cacheSize, String replacementStrategy){
-		runConfig();
+		runConfig("test.config");
 		try {
 			String script = "script.sh";
 			Process p = Runtime.getRuntime().exec("hostname -f");
@@ -141,8 +141,7 @@ public class ECSClient {
 				KVMessage receiveMessage = KVMessageUtils.receiveMessage(kvServerSocket.getInputStream());
 				System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
 				kvServerSockets.put(node.getHashedValue(), kvServerSocket);
-
-				
+	
 			}
 		}catch (IOException e) {
 		 	e.printStackTrace();
@@ -205,17 +204,15 @@ public class ECSClient {
 		return true;
 	}
 
-	int getTotalNumberOfMachines(){
+	public int getTotalNumberOfMachines(){
 		return totalNumberOfMachines;
 	}
 
-	private void runConfig(){
-		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e) {
-			System.out.println(e);
-		}
-		String fileName = "test.config";
+    public TreeSet<ECSNode> getAvailableMachines() {
+        return availableMachines;
+    } 
+
+	public void runConfig(String fileName){
 		try{
 			File file = new File (fileName);
 			FileReader fileReader = new FileReader(file);

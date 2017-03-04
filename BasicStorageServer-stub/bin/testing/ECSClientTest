@@ -1,0 +1,50 @@
+package testing;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.lang.ClassLoader;
+
+import junit.framework.TestCase;
+
+
+public class ECSClientTest extends TestCase {
+	private ECSClient client;
+	@Before
+    public void setUp() {
+		//put here
+		client = new ECSClient();
+		
+	}
+	
+	@After
+    public void tearDown() {
+		//empty
+    }
+	
+	@Test
+	public void testParseConfig(){
+		Exception ex = null;
+		try { 
+			client.runConfig();
+		{ catch (Exception e) {
+			ex = e;
+			ex.printStackTrace();			
+		}
+		assertNull(ex);
+		for( ECSNode n : availableMachines){
+			int n = Integer.parseInt(n.getPort());
+			if(n == 3000 || n == 4000) {
+				assertTrue(true);
+			} else {
+				assertTrue(false);			
+			}
+		}
+	}
+	
+
+	
+
+
+}

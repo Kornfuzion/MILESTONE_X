@@ -17,6 +17,9 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 /**
  * Represents a simple Echo Server implementation.
@@ -32,7 +35,8 @@ public class KVServer extends Thread {
     private boolean running;
     private StorageManager storageManager;
     private TreeSet<ECSNode> metadata;
-
+    private ReadWriteLock writeLock;
+    private boolean isWriteLocked;
     /**
      * Start KV Server at given port
      * @param port given port for storage server to operate
@@ -50,6 +54,8 @@ public class KVServer extends Thread {
         this.storageManager = null;
         this.running = false; 
         this.metadata = null;
+        this.writeLock = new ReentrantReadWriteLock();
+        this.isWriteLocked = false;
     }
 
     // Leave this constructor as legacy, but from now on we will only be using the constructor with port number
@@ -97,7 +103,7 @@ public class KVServer extends Thread {
             while(run){
                 try {
                     Socket client = serverSocket.accept();                
-                    RequestConnection connection = new RequestConnection(this, client, storageManager);
+                    RequestConnection connection = new RequestConnection(this, client, writeLock, storageManager);
                     new Thread(connection).start();
                     
                     logger.info("Connected to " 
@@ -132,9 +138,16 @@ public class KVServer extends Thread {
 
     // These don't do shit
     // Essentially phantom calls - so we'll call them and reply instantly
-    public void lockWrite() {}
+    public void lockWrite() {
+        writeLock.writeLock().lock();    
+        isWriteLocked = true;
+    }
     public void unlockWrite() {}
     public void moveData() {}
+
+    public boolean isWriteLocked() {
+        return isWriteLocked;
+    }
 
     public void updateMetadata(TreeSet<ECSNode> metadata) {
         this.metadata = metadata;
@@ -209,10 +222,10 @@ public class KVServer extends Thread {
             return false;
         }
     }
-	
-	public StorageManager getStorageManager() {
-		return this.storageManager;
-	}
+    
+    public StorageManager getStorageManager() {
+        return this.storageManager;
+    }
     
     public int getPort() {
         return this.port;
