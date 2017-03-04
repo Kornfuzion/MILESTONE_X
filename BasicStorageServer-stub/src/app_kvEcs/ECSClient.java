@@ -56,7 +56,7 @@ public class ECSClient {
 				KVMessage receiveMessage = KVMessageUtils.receiveMessage(inputStream);
 				if(receiveMessage == null)
 					System.out.println("receivemessage is null");
-				System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+				System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus() + " " + receiveMessage.getMessage());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -78,7 +78,7 @@ public class ECSClient {
 
 	public void initService( int numberOfNodes, int cacheSize, String replacementStrategy){
 		System.out.println("running script");
-		String script = "script.sh ug168.eecg.utoronto.ca";
+		String script = "script.sh ug176.eecg.utoronto.ca";
 		Runtime run = Runtime.getRuntime();
 		try {
 		//TODO add script arguments, do some kind of loop
@@ -102,7 +102,7 @@ public class ECSClient {
 			int portNumber = 0;
 			kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
 		} catch (IOException ioe) {
-			System.out.println(ioe);
+			ioe.printStackTrace();	
 		}
 		kvServerSockets.put(node.getHashedValue(), kvServerSocket);
 		totalNumberOfMachines++;

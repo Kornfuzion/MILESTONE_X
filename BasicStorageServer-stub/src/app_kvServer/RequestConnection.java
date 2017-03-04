@@ -41,7 +41,8 @@ public class RequestConnection implements Runnable {
         this.server = server;
         this.clientSocket = clientSocket;
         this.storageManager = storageManager;
-        this.persistent = false;
+        this.messageHandlers = new ArrayList<MessageHandler>();
+        setPersistence(false);
         addMessageHandlers();
     }
     
@@ -60,20 +61,15 @@ public class RequestConnection implements Runnable {
     public void run() {
         try {
             output = clientSocket.getOutputStream();
-            input = clientSocket.getInputStream();
+            input = clientSocket.getInputStream();       
 
-            KVMessage responseMessage = KVMessage.createChatMessage(
-                    "Connection to MSRG Echo server established: " 
-                    + clientSocket.getLocalAddress() + " / "
-                    + clientSocket.getLocalPort());
-            KVMessageUtils.sendMessage(responseMessage, output);
-            
             // This is now a one-time connection for regular clients
             // If it's an ECS client, we'll keep the connection open
             do {
                 try {
                     KVMessage receivedMessage = KVMessageUtils.receiveMessage(input);
                     KVMessage reply = null;
+                    
                     for (MessageHandler handler : messageHandlers) {
                         if (receivedMessage.getClientType() == handler.getClientType()) {
                             reply = handler.handleMessage(receivedMessage);
@@ -83,6 +79,7 @@ public class RequestConnection implements Runnable {
                     if (reply != null) {
                         KVMessageUtils.sendMessage(reply, output);
                     }
+                    KVMessageUtils.sendMessage(reply, output);
                 /* connection either terminated by the client or lost due to 
                  * network problems*/   
                 } catch (Exception e) {
