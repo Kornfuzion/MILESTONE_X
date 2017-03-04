@@ -77,7 +77,7 @@ public class KVMessage {
 	public KVMessage(CommandType command) {
         this.command = command;
         this.status = StatusType.INVALID;
-        this.clientType = ClientType.INVALID;
+        this.clientType = ClientType.CLIENT;
         this.key = EMPTY_STRING;
         this.value = EMPTY_STRING;
         this.message = EMPTY_STRING;
