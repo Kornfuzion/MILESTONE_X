@@ -96,7 +96,6 @@ public class KVServer extends Thread {
             while(isRunning()){
                 try {
                     Socket client = serverSocket.accept();                
-                    //ClientConnection connection = new ClientConnection(this, client, storageManager);
                     RequestConnection connection = new RequestConnection(this, client, storageManager);
                     new Thread(connection).start();
                     

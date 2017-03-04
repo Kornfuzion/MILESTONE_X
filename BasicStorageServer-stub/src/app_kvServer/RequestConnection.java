@@ -79,7 +79,6 @@ public class RequestConnection implements Runnable {
                     if (reply != null) {
                         KVMessageUtils.sendMessage(reply, output);
                     }
-                    KVMessageUtils.sendMessage(reply, output);
                 /* connection either terminated by the client or lost due to 
                  * network problems*/   
                 } catch (Exception e) {
