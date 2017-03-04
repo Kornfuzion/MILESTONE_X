@@ -33,6 +33,7 @@ public class KVServer extends Thread {
     private CachePolicy policy;
     private ServerSocket serverSocket;
     private boolean running;
+    private boolean alive;
     private StorageManager storageManager;
     private TreeSet<ECSNode> metadata;
     private ReadWriteLock writeLock;
@@ -53,6 +54,7 @@ public class KVServer extends Thread {
         this.policy = CachePolicy.FIFO;
         this.storageManager = null;
         this.running = false; 
+        this.alive = false;
         this.metadata = null;
         this.writeLock = new ReentrantReadWriteLock();
         this.isWriteLocked = false;
@@ -97,10 +99,10 @@ public class KVServer extends Thread {
      * Loops until the the server should be closed.
      */
     public void run() {
-        boolean run = createSocket();
+        alive = createSocket();
         
         if(serverSocket != null) {
-            while(run){
+            while(alive){
                 try {
                     Socket client = serverSocket.accept();                
                     RequestConnection connection = new RequestConnection(this, client, writeLock, storageManager);
@@ -122,12 +124,17 @@ public class KVServer extends Thread {
         return this.running;
     }
 
+    public boolean alive() {
+        return this.alive;
+    }
+
     public void startServer() {
         running = true;
     }
 
     public void shutdownServer() {
         stopServer();
+        this.alive = false;
         try {
             serverSocket.close();
         } catch (IOException e) {
