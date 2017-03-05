@@ -24,7 +24,7 @@ public class KVStore implements KVCommInterface {
 	        client = new KVClient(address, port);
                 client.setupIOStreams();	
 		//discard success message
-		client.getLatestMessage();	
+		//client.getLatestMessage();	
 	}
 
 	@Override
