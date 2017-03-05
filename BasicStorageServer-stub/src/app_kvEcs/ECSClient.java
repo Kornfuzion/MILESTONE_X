@@ -203,7 +203,7 @@ public class ECSClient {
         }
      }
 
-	public void initService(int numberOfNodes, int cacheSize, String replacementStrategy){
+	public void initKVService(int numberOfNodes, int cacheSize, String replacementStrategy){
 		runConfig("testECSClient.config");
 		try {
 			String script = "script.sh";
