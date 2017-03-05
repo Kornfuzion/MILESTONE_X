@@ -7,6 +7,7 @@ import org.junit.Test;
 import datastore.StorageManager;
 import cache.*;
 import app_kvServer.*;
+import app_kvEcs.*;
 
 import common.messages.*;
 
@@ -18,6 +19,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.ClassLoader;
+import java.util.*;
 
 import junit.framework.TestCase;
 
@@ -41,13 +43,18 @@ public class StorageManagerTest extends TestCase {
     private String storagePath;
 
     private final int version = 0;
+	private TreeSet<ECSNode> metadata;
+	private Comparator<ECSNode> comparator;
 
     @Before
     public void setUp() throws FileNotFoundException {
         File testStorageFilesDirectory = new File("src/testing/resources/storagemanagertest");
         storagePath = testStorageFilesDirectory.getAbsolutePath();
-        KVServerStatus serverStatus = new KVServerStatus(0, null);
-        storageManager = new StorageManager(CachePolicy.LRU, 10, storagePath, serverStatus);
+		comparator = new hashRingComparator();
+        metadata = new TreeSet<ECSNode>(comparator);
+		metadata.add(new ECSNode("0","0"));	
+        KVServerStatus serverStatus = new KVServerStatus(0, metadata);
+		storageManager = new StorageManager(CachePolicy.LRU, 10, storagePath, serverStatus);
    }
 
     @After
