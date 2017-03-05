@@ -270,8 +270,8 @@ public class KVServer extends Thread {
                 System.out.println("Usage: Server <port>!");
             } else {
                 int port = Integer.parseInt(args[0]);
-                new KVServer(port, 256, "FIFO").start();
-                //new KVServer(port).start();
+                //new KVServer(port, 256, "FIFO").start();
+                new KVServer(port).start();
             }
         } catch (IOException e) {
             System.out.println("Error! Unable to initialize logger!");

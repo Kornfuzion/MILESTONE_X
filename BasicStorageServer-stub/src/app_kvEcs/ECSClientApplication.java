@@ -77,7 +77,7 @@ public class ECSClientApplication {
 					int cacheSize = Integer.parseInt(tokens[2]);
 					String policy = tokens[3];
 					initFlag = true;				
-					client.initService(numNodes, cacheSize, policy);
+					client.initKVService(numNodes, cacheSize, policy);
 				}
 				else{
 					System.out.println("Not the correct amount of arguments for command: init");			
