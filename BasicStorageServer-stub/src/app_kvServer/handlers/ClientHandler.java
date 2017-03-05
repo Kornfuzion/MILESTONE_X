@@ -9,6 +9,8 @@ import logger.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.log4j.*;
 
 public class ClientHandler implements MessageHandler {
@@ -32,7 +34,8 @@ public class ClientHandler implements MessageHandler {
     }
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
-        // If the server isn't supposed to be accepting user requests yet,
+        KVServerStatus serverStatus = server.getServerStatus();
+		// If the server isn't supposed to be accepting user requests yet,
         // Block the request, reply with an ERROR message
         if (!server.isRunning() && server.alive()) {
            return new KVMessage(message.getCommand())
@@ -41,12 +44,35 @@ public class ClientHandler implements MessageHandler {
 
         KVMessage response = new KVMessage(message.getCommand());
         StatusType responseStatus = StatusType.ERROR;
-
-        ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(message.getKey()), server.getMetadata());
-        TreeSet<ECSNode> metadata = null;
         String reply = "";
 
+        int version = 0;
+		// Checking for if server is write locked.
+		if (message.getCommand() == CommandType.PUT || message.getCommand() == CommandType.DELETE) {
+        	serverStatus.writeReadLock();
+        	// Server is under write lock, return write lock message to client.
+        	if (serverStatus.isWriteLocked()) {
+            	serverStatus.writeReadUnlock();
+            	responseStatus = StatusType.SERVER_WRITE_LOCK;
+            	response.setStatus(responseStatus)
+                    	.setMessage(reply);
+            	logger.info("REPLIED TO " + message.getCommand() + " WITH STATUS " + response.getStatus());
+            	return response;
+        	}
+        	// Server is not under write lock, get a version number.
+        	serverStatus.versionReadLock();
+        	version = serverStatus.getVersion();
+        	serverStatus.versionReadUnlock();
+        	serverStatus.writeReadUnlock();
+		}
+
+		serverStatus.metadataReadLock();
+        ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(message.getKey()), server.getMetadata());
+        TreeSet<ECSNode> metadata = null;
+
         boolean reroute = !server.isSuccessor(successor) || !server.alive();
+		serverStatus.metadataReadUnlock();
+
         if (reroute) {
             responseStatus = StatusType.REROUTE;
             metadata = server.getMetadata();
@@ -54,12 +80,14 @@ public class ClientHandler implements MessageHandler {
         }
         else if (successor != null){
             reply = "CORRECT SERVER: hashed key of [" + MetadataUtils.hash(message.getKey()) + "] served by server (port,IP) = (" + successor.getPort() + "," + successor.getIP() + ")" + " hashed at " + successor.getHashedValue();
+		// TODO: NEED TO RETURN HERE FOR A REROUTE IMMEDIATELY
         }
+
         switch (message.getCommand()) {
             case GET:
                 String getValue = "";
                 if (!reroute){
-                    getValue = storageManager.get(message.getKey());
+                    getValue = storageManager.get(message.getKey(), version);
                     logger.info("RECEIVED GET REQUEST");
                     if (getValue != null && getValue.length() > 0) {
                         // GET SUCCESS
@@ -70,7 +98,6 @@ public class ClientHandler implements MessageHandler {
                         responseStatus = StatusType.GET_ERROR;
                     }
                 }
-
                 response
                     .setKey(message.getKey())
                     .setValue(getValue)
@@ -82,7 +109,7 @@ public class ClientHandler implements MessageHandler {
             case PUT:
                 if (!reroute) {
                     logger.info("RECEIVED PUT REQUEST");
-                    responseStatus = storageManager.set(message.getKey(), message.getValue());
+                    responseStatus = storageManager.set(message.getKey(), message.getValue(), version);
                 }
                 response
                     .setKey(message.getKey())
@@ -95,7 +122,7 @@ public class ClientHandler implements MessageHandler {
             case DELETE:
                 if (!reroute) {
                     logger.info("RECEIVED DELETE REQUEST");
-                    responseStatus = storageManager.delete(message.getKey()); 
+                    responseStatus = storageManager.delete(message.getKey(), version); 
                 }
                 response
                     .setKey(message.getKey())

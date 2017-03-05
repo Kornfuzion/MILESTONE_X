@@ -112,23 +112,38 @@ public class ECSClientApplication {
 		}
 		else if(tokens[0].equals("shutdown")){
 			if(tokens.length == 1 ){
-
+                    client.shutDown();
 				}
 				else{
 					System.out.println("Not the correct amount of arguments for command: shutdown");			
 				}
-			System.out.println(PROMPT + "Application Exits!");		
 		}
 		else if(tokens[0].equals("removenode")){
 			if(tokens.length == 2 ){
-				client.removeNode(tokens[1]);
+                int serverIndex = 0;
+                try {
+                    serverIndex = Integer.parseInt(tokens[1]);
+				    client.removeNode(serverIndex);
+                } catch (Exception e) {
+                    System.out.println("Server index must be an integer");
+                }
 			}
 		}
 		else if(tokens[0].equals("addnode")){
-			if(tokens.length == 4 ){
-				client.addNode(tokens[1], tokens[2], tokens[3]);
+			if(tokens.length == 3 ){
+                int cacheSize = 0;
+                try {
+                    cacheSize = Integer.parseInt(tokens[1]);
+				    client.addNode(cacheSize, tokens[2]);
+                } catch (Exception e) {
+                    System.out.println("Cache size must be an integer.");
+                }
 			}	
 		}
+        else if(tokens[0].equals("exit")){
+            client.shutDown();
+            System.exit(1);
+        }
 		else{
 			System.out.println("Unknown command");
 			//printHelp();		

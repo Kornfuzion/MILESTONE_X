@@ -82,78 +82,97 @@ public class ECSClient {
 		return true;
 	}
 
-    public void removeNode(String portString) {
+    public void removeNode(int serverIndex) {
+        if (serverIndex >= hashRing.size()) {
+            System.out.println("Index out of range");
+            return;
+        }
+        ECSNode removeNode = null;
+        int ind = 0;
+        for (ECSNode node: hashRing) {
+            if (ind == serverIndex) {
+                removeNode = node;
+                break;
+            } 
+            ind++;
+        }
+        if (removeNode == null) {
+            // Should never get here.
+            return;
+        }
         try {
-            ECSNode removeNode = null;
-            for (ECSNode node : hashRing) {
-                if (node.getPort().equals(portString)) {
-                    removeNode = node;
-                    break;
-                }    
-            }
-
-            if (removeNode == null) {
-                // wtf we fucked up
-                return;
-            }
-
             String hash = removeNode.getHashedValue();
             Socket removeSocket = kvServerSockets.get(hash); 
             hashRing.remove(removeNode);
             ECSNode successor = MetadataUtils.getSuccessor(hash, hashRing, false);
             Socket successorSocket = kvServerSockets.get(successor.getHashedValue());                  
-            // Stop the node to be removed
-            sendReceiveMessage(CommandType.STOP, removeSocket);
+            
+            // Lock the node to be removed.
+            sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
 
-            // Lock successor
+            // Lock the successor.
             sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
 
-            // Move data to successor
-            sendReceiveMessage(CommandType.MOVE_DATA, removeSocket);
+            // Send metadata update to successor.
+            setMetadata(CommandType.UPDATE_METADATA, hashRing, 0, CachePolicy.FIFO, successorSocket);
 
-            // Update the metadata of the dying node so it can reroute any currently connected clients
-            setMetadata(CommandType.UPDATE_METADATA, hashRing, 0, CachePolicy.FIFO, removeSocket);
+            // Notify the node that it should stop receiving any connections, including reads.
+            sendReceiveMessage(CommandType.STOP, removeSocket);
+            
+            // Shutdown the node to be removed (no need to worry about releasing the write lock)
+            // Don't need to wait for a respnse.
+            sendMessage(CommandType.SHUT_DOWN, removeSocket);
 
-            // Shutdown node to be removed
-            sendReceiveMessage(CommandType.SHUT_DOWN, removeSocket);
-
-            // Unlock successor
+            // Unlock the successor
             sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
 
-            // Update all server metadata
-		    updateAllMetadata();
+            // Update all server metadata.
+            updateAllMetadata();
+
+            // Add node back to available machines.
+            availableMachines.add(removeNode); 
+            // Remove node's socket.
+            kvServerSockets.remove(removeNode.getHashedValue());
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void addNode(String portString, String cacheSizeString, String cachePolicyString) {
+    public void addNode(int cacheSize, String cachePolicyString) {
+        // No more available machines to add.
+        if (availableMachines.size() == 0) {
+            System.out.println("No more available machines to add");
+            return;
+        }
         try {
-            int port = Integer.parseInt(portString);
-            int cacheSize = Integer.parseInt(cacheSizeString);
-            CachePolicy cachePolicy = CachePolicy.parseString(cachePolicyString);
+			String script = "script.sh";
+			Process p = Runtime.getRuntime().exec("hostname -f");
+			p.waitFor();
+			BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			String hostname = br.readLine();
 
-            String script = "script.sh";
-		    Process p = Runtime.getRuntime().exec("hostname -f");
-		    p.waitFor();
-		    BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-		    String hostname = br.readLine();
-		    if (hostname == null) {
-			    System.out.println("Could not get hostname of machine. Please restart");
-			    System.exit(0);
-		    }	
+			if (hostname == null) {
+				System.out.println("Could not get hostname of machine. Please restart");
+				return;
+			}	 
 
-		    p = Runtime.getRuntime().exec(script + " " + hostname + " " + port);
-		    p.waitFor();
+            ECSNode node = availableMachines.pollFirst();
+            p = Runtime.getRuntime().exec(script + " " + hostname + " " + node.getPort());
+			p.waitFor();
+		    hashRing.add(node);
 
 		    try {
 			    Thread.sleep(5000);
 		    } catch (InterruptedException e) {
 			    System.out.println(e);
 		    }
-            ECSNode node = new ECSNode(Integer.toString(port), ROOT_HOST_ADDRESS);
+
             Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
-		    kvServerSockets.put(node.getHashedValue(), kvServerSocket);
+			kvServerSockets.put(node.getHashedValue(), kvServerSocket); 
+            CachePolicy cachePolicy = CachePolicy.parseString(cachePolicyString);
+            setMetadata(CommandType.INIT, hashRing, cacheSize, cachePolicy, kvServerSocket);
+	
 		    hashRing.add(node);
 
             ECSNode successor = MetadataUtils.getSuccessor(node.getHashedValue(), hashRing, false);
@@ -171,6 +190,9 @@ public class ECSClient {
             // Move data
             sendReceiveMessage(CommandType.MOVE_DATA, successorSocket);
 
+            // Update successor's metadata while under write lock
+            sendReceiveMessage(CommandType.LOCK_WRITE_UPDATE_METADATA, successorSocket);
+
             // Update all server metadata
             updateAllMetadata();
 
@@ -182,7 +204,7 @@ public class ECSClient {
      }
 
 	public void initService(int numberOfNodes, int cacheSize, String replacementStrategy){
-		runConfig();
+		runConfig("testECSClient.config");
 		try {
 			String script = "script.sh";
 			Process p = Runtime.getRuntime().exec("hostname -f");
@@ -201,7 +223,6 @@ public class ECSClient {
 				p.waitFor();
 				hashRing.add(node);
 			}
-			
 			// Sleeping for 5s before trying to connect to the KVServers.
 			try {
 				Thread.sleep(5000);
@@ -213,6 +234,7 @@ public class ECSClient {
 			for (ECSNode node : hashRing) {
 				Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
 				kvServerSockets.put(node.getHashedValue(), kvServerSocket);
+
                 setMetadata(CommandType.INIT, hashRing, cacheSize, CachePolicy.parseString(replacementStrategy), kvServerSocket);
 			}
 		}catch (IOException e) {
@@ -247,6 +269,13 @@ public class ECSClient {
 	    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
     }
 
+    public void sendMessage(CommandType commandType, Socket socket) throws Exception{
+        KVMessage message = new KVMessage(commandType)
+				            .setClientType(ClientType.ECS);  
+		KVMessageUtils.sendMessage(message, socket.getOutputStream());
+    }
+
+
     public void updateAllMetadata() throws Exception {
         // Update metadata of all other servers
         for (ECSNode serverNode : hashRing) {
@@ -256,32 +285,17 @@ public class ECSClient {
     }
 
 	public boolean shutDown(){
-		//stops all server instances and exits the remote processes
-		for (Map.Entry<String, Socket> entry: kvServerSockets.entrySet()) {
-			String key = entry.getKey();			
-			Socket socket = entry.getValue();
-			if(socket == null || key == null){
-				System.out.println("shits null");			
-			}
-			try {
-				InputStream inputStream = socket.getInputStream();
-				OutputStream outputStream = socket.getOutputStream();
-				// Send start message to kvServer.
-				KVMessage message = new KVMessage(CommandType.SHUT_DOWN)
-										.setClientType(ClientType.ECS);
-				System.out.println(message.getCommand());
-				KVMessageUtils.sendMessage(message, outputStream);
-				KVMessage receiveMessage = KVMessageUtils.receiveMessage(inputStream);
-				if(receiveMessage == null)
-					System.out.println("receivemessage is null");
-				System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
-				//close the socket connection.
-				socket.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		
+        try {
+            for (Map.Entry<String, Socket> entry: kvServerSockets.entrySet()) {
+                Socket socket = entry.getValue();
+                sendReceiveMessage(CommandType.LOCK_WRITE, socket);
+                sendReceiveMessage(CommandType.STOP, socket);
+                sendMessage(CommandType.SHUT_DOWN, socket);
+            }
+        } catch (Exception e) {
+            System.out.println("Could not shut down all servers");
+        }
+	
 		return true;
 	}
 
@@ -307,17 +321,27 @@ public class ECSClient {
 		return true;
 	}
 
-	int getTotalNumberOfMachines(){
+	public int getTotalNumberOfMachines(){
 		return totalNumberOfMachines;
 	}
 
-	private void runConfig(){
-		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e) {
-			System.out.println(e);
-		}
-		String fileName = "test.config";
+    public TreeSet<ECSNode> getAvailableMachines() {
+        return availableMachines;
+    }
+	
+	public TreeSet<ECSNode> getHashRing(){
+		return hashRing;
+	}
+ 
+	public int getHashRingSize(){
+		return hashRing.size();	
+	}
+
+	public int getAvailableMachinesSize(){
+		return availableMachines.size(); 
+	}
+
+	public void runConfig(String fileName){
 		try{
 			File file = new File (fileName);
 			FileReader fileReader = new FileReader(file);
@@ -327,10 +351,7 @@ public class ECSClient {
 			String line;
 			while((line = bufferedReader.readLine()) != null){
 				String[] splited = line.split(" ");
-				if(splited.length < 2){
-					System.out.println("screwed up somewhere in the read file");				
-				}
-				else{
+				if (splited.length == 2) {
 					addToAvailableMachines(splited[0], splited[1]);
 				}
 			}
@@ -340,7 +361,7 @@ public class ECSClient {
 		}	
 	}
 
-	public static void main(String[] args){
+	/*public static void main(String[] args){
 		ECSClient client = new ECSClient();
 		try {
 			Thread.sleep(5000);
@@ -375,20 +396,8 @@ public class ECSClient {
 		//populate here lois
 		
 		
-		//testing if it worked
-		/*while(hashRing.size() > 0){
-			ECSNode n = hashRing.pollFirst();
-			if(n != null){
-				System.out.println(n.getPort() +  " " + n.getIP() + " " + n.getHashedValue());			
-			}			
-		}
-		*/
-		// STEPS TO START UP THE KV-SERVER
-		//client.initService(1,1,"none");
-		// 1. Start the servers
-		// 2. Wait for 5 seconds 
 		return;			
-	}
+	}*/
 	
 
 	

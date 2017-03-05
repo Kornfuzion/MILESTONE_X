@@ -17,6 +17,9 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 /**
  * Represents a simple Echo Server implementation.
@@ -33,6 +36,8 @@ public class KVServer extends Thread {
     private boolean alive;
     private StorageManager storageManager;
     private TreeSet<ECSNode> metadata;
+
+    private KVServerStatus status;
 
     /**
      * Start KV Server at given port
@@ -52,6 +57,8 @@ public class KVServer extends Thread {
         this.running = false; 
         this.alive = false;
         this.metadata = null;
+
+        this.status = new KVServerStatus(port, metadata);
     }
 
     // Leave this constructor as legacy, but from now on we will only be using the constructor with port number
@@ -83,7 +90,7 @@ public class KVServer extends Thread {
         }
        
         try { 
-            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath);
+            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath, status);
         } catch (FileNotFoundException fnfe) {
             System.out.println("Could not find " + storagePath + ". Please try again");
             System.exit(1);
@@ -131,22 +138,42 @@ public class KVServer extends Thread {
     public void shutdownServer() {
         stopServer();
         this.alive = false;
+
         try {
             serverSocket.close();
         } catch (IOException e) {
             logger.error("Error! " +
                     "Unable to close socket on port: " + port, e);
         }
+        // Kill the server.
+        System.exit(1);
     }
 
-    // These don't do shit
-    // Essentially phantom calls - so we'll call them and reply instantly
-    public void lockWrite() {}
-    public void unlockWrite() {}
+    public KVServerStatus getServerStatus() {
+        return status;
+    }
     public void moveData() {}
+
+    public void blockStorageWrites() {
+        status.versionWriteLock();
+        status.versionWriteUnlock();
+        //storageManager.blockWrites();
+    }
+
+    public void blockStorageRerouteReads(TreeSet<ECSNode> metadata) {
+        status.readWriteLock();
+ 
+        status.metadataWriteLock();
+        updateMetadata(metadata);
+        status.metadataWriteUnlock();
+
+        status.readWriteUnlock();
+    }
 
     public void updateMetadata(TreeSet<ECSNode> metadata) {
         this.metadata = metadata;
+        status.setMetadata(metadata);
+        
     }
 
     // Return a copy of the metadata, to be safe
@@ -163,12 +190,16 @@ public class KVServer extends Thread {
      */
     public void stopServer(){
         running = false;
+        status.readWriteLock();
+        status.setStopServer(true);
+        status.readWriteUnlock();
     }
 
     public void initKVServer(TreeSet<ECSNode> metadata, int cacheSize, CachePolicy policy) {
         this.cacheSize = cacheSize;
         this.policy = policy;
         this.metadata = metadata;
+        status.setMetadata(metadata);
 
         for (ECSNode node : metadata) {
             logger.info(node.getPort() + node.getIP() + node.getHashedValue());
@@ -195,7 +226,7 @@ public class KVServer extends Thread {
         }
 
         try { 
-            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath);
+            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath, status);
         } catch (FileNotFoundException fnfe) {
             System.out.println("Could not find " + storagePath + ". Please try again");
             System.exit(1);
@@ -218,10 +249,10 @@ public class KVServer extends Thread {
             return false;
         }
     }
-	
-	public StorageManager getStorageManager() {
-		return this.storageManager;
-	}
+    
+    public StorageManager getStorageManager() {
+        return this.storageManager;
+    }
     
     public int getPort() {
         return this.port;

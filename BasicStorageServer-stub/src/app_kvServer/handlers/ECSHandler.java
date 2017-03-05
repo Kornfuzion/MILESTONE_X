@@ -8,6 +8,8 @@ import logger.*;
 
 import org.apache.log4j.*;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ECSHandler implements MessageHandler {
     private final ClientType type = ClientType.ECS;
@@ -30,6 +32,7 @@ public class ECSHandler implements MessageHandler {
     }
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
+		KVServerStatus serverStatus = server.getServerStatus();
         KVMessage reply = new KVMessage(message.getCommand())
                                 .setStatus(StatusType.SUCCESS);
         switch (message.getCommand()) {
@@ -46,17 +49,35 @@ public class ECSHandler implements MessageHandler {
                 server.shutdownServer();
                 break;
             case LOCK_WRITE:
-                server.lockWrite();
+                serverStatus.writeWriteLock();
+                // Change server status to be write locked.
+                serverStatus.setWriteLocked(true);
+				serverStatus.versionWriteLock();
+                // Change server version
+                serverStatus.updateVersion();
+                serverStatus.versionWriteUnlock();
+                serverStatus.writeWriteUnlock();
+
+                server.blockStorageWrites();
                 break;
             case UNLOCK_WRITE:
-                server.unlockWrite();
+                serverStatus.writeWriteLock();
+                serverStatus.setWriteLocked(false);
+                serverStatus.writeWriteUnlock();
                 break;
             case MOVE_DATA:
-                server.moveData();
+                //server.blockStorageWrites();
+                // At this point we are guaranteed that there will be no further writes. 
+                //server.moveData();
                 break;
             case UPDATE_METADATA:
+				serverStatus.metadataWriteLock();
                 server.updateMetadata(message.getMetadata());
+				serverStatus.metadataWriteUnlock();
                 break;
+			case LOCK_WRITE_UPDATE_METADATA:
+				server.blockStorageRerouteReads(message.getMetadata());
+				break;
         }
 
         // For now, assume no failures possible so just return a generic success
