@@ -136,12 +136,15 @@ public class KVServer extends Thread {
     public void shutdownServer() {
         stopServer();
         this.alive = false;
+
         try {
             serverSocket.close();
         } catch (IOException e) {
             logger.error("Error! " +
                     "Unable to close socket on port: " + port, e);
         }
+        // Kill the server.
+        System.exit(1);
     }
 
     public KVServerStatus getServerStatus() {
@@ -185,6 +188,9 @@ public class KVServer extends Thread {
      */
     public void stopServer(){
         running = false;
+        status.readWriteLock();
+        status.setStopServer(true);
+        status.readWriteUnlock();
     }
 
     public void initKVServer(TreeSet<ECSNode> metadata, int cacheSize, CachePolicy policy) {

@@ -83,8 +83,8 @@ public class ECSClient {
 	}
 
     public void removeNode(String portString) {
+        ECSNode removeNode = null;
         try {
-            ECSNode removeNode = null;
             for (ECSNode node : hashRing) {
                 if (node.getPort().equals(portString)) {
                     removeNode = node;
@@ -102,6 +102,31 @@ public class ECSClient {
             hashRing.remove(removeNode);
             ECSNode successor = MetadataUtils.getSuccessor(hash, hashRing, false);
             Socket successorSocket = kvServerSockets.get(successor.getHashedValue());                  
+            
+            // Lock the node to be removed.
+            sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
+
+            // Lock the successor.
+            sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
+
+            // Send metadata update to successor.
+            setMetadata(CommandType.UPDATE_METADATA, hashRing, 0, CachePolicy.FIFO, successorSocket);
+
+            // Notify the node that it should stop receiving any connections, including reads.
+            sendReceiveMessage(CommandType.STOP, removeSocket);
+            
+            // Shutdown the node to be removed (no need to worry about releasing the write lock)
+            // Don't need to wait for a respnse.
+            sendMessage(CommandType.SHUT_DOWN, removeSocket);
+
+            // Unlock the successor
+            sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+
+            // Update all server metadata.
+            updateAllMetadata();
+
+
+            /*           
             // Stop the node to be removed
             sendReceiveMessage(CommandType.STOP, removeSocket);
 
@@ -122,6 +147,7 @@ public class ECSClient {
 
             // Update all server metadata
 		    updateAllMetadata();
+            */
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -250,6 +276,13 @@ public class ECSClient {
 	    KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
 	    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
     }
+
+    public void sendMessage(CommandType commandType, Socket socket) throws Exception{
+        KVMessage message = new KVMessage(commandType)
+				            .setClientType(ClientType.ECS);  
+		KVMessageUtils.sendMessage(message, socket.getOutputStream());
+    }
+
 
     public void updateAllMetadata() throws Exception {
         // Update metadata of all other servers

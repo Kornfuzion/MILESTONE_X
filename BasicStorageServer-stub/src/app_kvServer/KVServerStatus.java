@@ -9,10 +9,10 @@ import common.*;
 
 public class KVServerStatus {
     private ReadWriteLock writeLock;
-	private boolean isWriteLocked;
+    private boolean isWriteLocked;
 
     private ReadWriteLock versionLock;
-	private int version;
+    private int version;
 
     private ReadWriteLock metadataLock;
 

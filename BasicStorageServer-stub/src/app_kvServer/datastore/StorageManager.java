@@ -58,6 +58,11 @@ public class StorageManager {
     */ 
     public String get(String key, int version) {
         serverStatus.readReadLock();
+        if (serverStatus.stopServer()) {
+            serverStatus.readReadUnlock();
+            //TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
+            return null;
+        }
         serverStatus.metadataReadLock();
         try {
             ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(key), serverStatus.getMetadata()); 
