@@ -234,8 +234,11 @@ public class ECSClient {
 			for (ECSNode node : hashRing) {
 				Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
 				kvServerSockets.put(node.getHashedValue(), kvServerSocket);
-
-                setMetadata(CommandType.INIT, hashRing, cacheSize, CachePolicy.parseString(replacementStrategy), kvServerSocket);
+                setMetadata(CommandType.INIT, 
+                            hashRing, 
+                            cacheSize, 
+                            CachePolicy.parseString(replacementStrategy), 
+                    kvServerSocket);
 			}
 		}catch (IOException e) {
 		 	e.printStackTrace();

@@ -67,8 +67,9 @@ public class KVServer extends Thread {
         this.port = port;
         this.cacheSize = cacheSize;
         this.policy = CachePolicy.parseString(policy);
-	this.running = true;
-	this.metadata = null;
+	    this.running = true;
+	    this.metadata = null;
+        this.status = new KVServerStatus(port, new TreeSet<ECSNode>());
         String storagePath = System.getProperty("user.dir") + File.separator + "storage";
         try {
             File storageFolder = new File(storagePath);

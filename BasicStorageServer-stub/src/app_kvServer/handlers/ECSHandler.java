@@ -37,7 +37,9 @@ public class ECSHandler implements MessageHandler {
                                 .setStatus(StatusType.SUCCESS);
         switch (message.getCommand()) {
             case INIT:
-                server.initKVServer(message.getMetadata(), message.getCacheSize(), message.getCachePolicy());
+                server.initKVServer(message.getMetadata(), 
+                                    message.getCacheSize(), 
+                                    message.getCachePolicy());
                 break;
             case START:
                 server.startServer();
