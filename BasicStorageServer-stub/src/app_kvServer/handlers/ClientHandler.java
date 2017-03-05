@@ -42,6 +42,7 @@ public class ClientHandler implements MessageHandler {
                         .setStatus(StatusType.ERROR);
         }
 
+        serverStatus.metadataReadLock();
         KVMessage response = new KVMessage(message.getCommand());
         StatusType responseStatus = StatusType.ERROR;
 
@@ -50,6 +51,8 @@ public class ClientHandler implements MessageHandler {
         String reply = "";
 
         boolean reroute = !server.isSuccessor(successor) || !server.alive();
+		serverStatus.metadataReadUnlock();
+
         if (reroute) {
             responseStatus = StatusType.REROUTE;
             metadata = server.getMetadata();
@@ -57,6 +60,7 @@ public class ClientHandler implements MessageHandler {
         }
         else {
             reply = "CORRECT SERVER: hashed key of [" + MetadataUtils.hash(message.getKey()) + "] served by server (port,IP) = (" + successor.getPort() + "," + successor.getIP() + ")" + " hashed at " + successor.getHashedValue();
+		// TODO: NEED TO RETURN HERE FOR A REROUTE IMMEDIATELY
         }
 
         int version = 0;

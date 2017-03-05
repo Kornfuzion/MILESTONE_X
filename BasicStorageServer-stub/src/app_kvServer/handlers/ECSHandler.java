@@ -71,8 +71,13 @@ public class ECSHandler implements MessageHandler {
                 //server.moveData();
                 break;
             case UPDATE_METADATA:
+				serverStatus.metadataWriteLock();
                 server.updateMetadata(message.getMetadata());
+				serverStatus.metadataWriteUnlock();
                 break;
+			case LOCK_WRITE_UPDATE_METADATA:
+				server.blockStorageRerouteReads(message.getMetadata());
+				break;
         }
 
         // For now, assume no failures possible so just return a generic success

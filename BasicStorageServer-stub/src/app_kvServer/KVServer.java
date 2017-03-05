@@ -58,7 +58,7 @@ public class KVServer extends Thread {
         this.alive = false;
         this.metadata = null;
 
-        this.status = new KVServerStatus();
+        this.status = new KVServerStatus(port, metadata);
     }
 
     // Leave this constructor as legacy, but from now on we will only be using the constructor with port number
@@ -150,11 +150,25 @@ public class KVServer extends Thread {
     public void moveData() {}
 
     public void blockStorageWrites() {
-        storageManager.blockWrites();
+        status.versionWriteLock();
+        status.versionWriteUnlock();
+        //storageManager.blockWrites();
+    }
+
+    public void blockStorageRerouteReads(TreeSet<ECSNode> metadata) {
+        status.readWriteLock();
+ 
+        status.metadataWriteLock();
+        updateMetadata(metadata);
+        status.metadataWriteUnlock();
+
+        status.readWriteUnlock();
     }
 
     public void updateMetadata(TreeSet<ECSNode> metadata) {
         this.metadata = metadata;
+        status.setMetadata(metadata);
+        
     }
 
     // Return a copy of the metadata, to be safe
@@ -177,6 +191,7 @@ public class KVServer extends Thread {
         this.cacheSize = cacheSize;
         this.policy = policy;
         this.metadata = metadata;
+        status.setMetadata(metadata);
 
         for (ECSNode node : metadata) {
             logger.info(node.getPort() + node.getIP() + node.getHashedValue());

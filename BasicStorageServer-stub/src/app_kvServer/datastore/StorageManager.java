@@ -5,7 +5,9 @@ import cache.CacheManager;
 import cache.CachePolicy;
 import storage.Storage;
 import app_kvServer.*;
+import app_kvEcs.*;
 
+import common.*;
 import common.messages.*;
 
 import logger.*;
@@ -55,11 +57,33 @@ public class StorageManager {
     * @return The value associated with the key. Returns null if key does not exist or an error occurs. 
     */ 
     public String get(String key, int version) {
+        serverStatus.readReadLock();
+        serverStatus.metadataReadLock();
+        try {
+            ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(key), serverStatus.getMetadata()); 
+            if (serverStatus.getPort() != Integer.parseInt(successor.getPort())) {
+                // Need to reroute the read.
+
+                serverStatus.metadataReadUnlock();
+                serverStatus.readReadUnlock();
+                // TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
+                return null;
+            }
+        } catch (Exception e) {
+            serverStatus.metadataReadUnlock();
+            serverStatus.readReadUnlock();
+            // TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
+            return null;
+        }
+        serverStatus.metadataReadUnlock();  
+        // Don't need to reroute the read.
         if (key == null) {
             logger.info("Server GET rejecting null key");
+            serverStatus.readReadUnlock();
             return null;
         }
         logger.info("Server GET with Key: " + key);
+        serverStatus.readReadUnlock();
         return storage.get(key);    
     }
 
@@ -112,10 +136,11 @@ public class StorageManager {
         return status;
     }
 
-    public boolean blockWrites() {
-        serverStatus.versionWriteLock();
-        //can copy data
-        serverStatus.versionWriteUnlock();
+
+    public boolean blockReadsAndShutdown() {
+        serverStatus.readWriteLock();
+        serverStatus.setStopServer(true);
+        serverStatus.readWriteUnlock();
         return true;
     }
 }
