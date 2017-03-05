@@ -78,7 +78,7 @@ public class ClientHandler implements MessageHandler {
             metadata = server.getMetadata();
             reply = "INCORRECT SERVER: hashed key of [" + MetadataUtils.hash(message.getKey()) + "] served by server (port,IP) = (" + server.getPort() + ",127.0.0.1)" + " BUT SHOULD BE AT SERVER:(port,IP) = ("+ successor.getPort() + "," + successor.getIP() + ")" + " hashed at " + successor.getHashedValue();
         }
-        else {
+        else if (successor != null){
             reply = "CORRECT SERVER: hashed key of [" + MetadataUtils.hash(message.getKey()) + "] served by server (port,IP) = (" + successor.getPort() + "," + successor.getIP() + ")" + " hashed at " + successor.getHashedValue();
 		// TODO: NEED TO RETURN HERE FOR A REROUTE IMMEDIATELY
         }
