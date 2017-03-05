@@ -34,7 +34,8 @@ public class ClientHandler implements MessageHandler {
     }
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
-        // If the server isn't supposed to be accepting user requests yet,
+        KVServerStatus serverStatus = server.getServerStatus();
+		// If the server isn't supposed to be accepting user requests yet,
         // Block the request, reply with an ERROR message
         if (!server.isRunning() && server.alive()) {
            return new KVMessage(message.getCommand())
@@ -59,10 +60,10 @@ public class ClientHandler implements MessageHandler {
         }
 
         int version = 0;
-        server.writeReadLock();
+        serverStatus.writeReadLock();
         // Server is under write lock, return write lock message to client.
-        if (server.isWriteLocked()) {
-            server.writeReadUnlock();
+        if (serverStatus.isWriteLocked()) {
+            serverStatus.writeReadUnlock();
             // NEED TO ALLOW READS.
             responseStatus = StatusType.SERVER_WRITE_LOCK;
             response.setStatus(responseStatus)
@@ -71,10 +72,10 @@ public class ClientHandler implements MessageHandler {
             return response;
         }
         // Server is not under write lock, get a version number.
-        server.versionReadLock();
-        version = server.getVersion();
-        server.versionReadUnlock();
-        server.writeReadUnlock();
+        serverStatus.versionReadLock();
+        version = serverStatus.getVersion();
+        serverStatus.versionReadUnlock();
+        serverStatus.writeReadUnlock();
 
         switch (message.getCommand()) {
             case GET:

@@ -32,6 +32,7 @@ public class ECSHandler implements MessageHandler {
     }
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
+		KVServerStatus serverStatus = server.getServerStatus();
         KVMessage reply = new KVMessage(message.getCommand())
                                 .setStatus(StatusType.SUCCESS);
         switch (message.getCommand()) {
@@ -48,22 +49,26 @@ public class ECSHandler implements MessageHandler {
                 server.shutdownServer();
                 break;
             case LOCK_WRITE:
-                server.writeWriteLock();
+                serverStatus.writeWriteLock();
                 // Change server status to be write locked.
-                server.lockWrite();
-		server.versionWriteLock();
+                serverStatus.setWriteLocked(true);
+				serverStatus.versionWriteLock();
                 // Change server version
-                server.updateVersion();
-                server.versionWriteUnlock();
-                server.writeWriteUnlock();
+                serverStatus.updateVersion();
+                serverStatus.versionWriteUnlock();
+                serverStatus.writeWriteUnlock();
+
+                server.blockStorageWrites();
+                // At this point we are guaranteed that there will be no further writes. 
                 break;
             case UNLOCK_WRITE:
-                server.writeWriteLock();
-                server.unlockWrite();
-                server.writeWriteUnlock();
+                serverStatus.writeWriteLock();
+                serverStatus.setWriteLocked(false);
+                serverStatus.writeWriteUnlock();
                 break;
             case MOVE_DATA:
-                server.moveData();
+                server.blockStorageWrites();
+                //server.moveData();
                 break;
             case UPDATE_METADATA:
                 server.updateMetadata(message.getMetadata());

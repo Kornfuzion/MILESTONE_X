@@ -36,10 +36,8 @@ public class KVServer extends Thread {
     private boolean alive;
     private StorageManager storageManager;
     private TreeSet<ECSNode> metadata;
-    private ReadWriteLock writeLock;
-    private boolean isWriteLocked;
-    private ReadWriteLock versionLock;
-    private int version;
+
+    private KVServerStatus status;
 
     /**
      * Start KV Server at given port
@@ -59,10 +57,8 @@ public class KVServer extends Thread {
         this.running = false; 
         this.alive = false;
         this.metadata = null;
-        this.writeLock = new ReentrantReadWriteLock();
-        this.isWriteLocked = false;
-        this.versionLock = new ReentrantReadWriteLock();
-        this.version = 0;
+
+        this.status = new KVServerStatus();
     }
 
     // Leave this constructor as legacy, but from now on we will only be using the constructor with port number
@@ -92,7 +88,7 @@ public class KVServer extends Thread {
         }
        
         try { 
-            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath, this);
+            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath, status);
         } catch (FileNotFoundException fnfe) {
             System.out.println("Could not find " + storagePath + ". Please try again");
             System.exit(1);
@@ -148,60 +144,13 @@ public class KVServer extends Thread {
         }
     }
 
-    // These don't do shit
-    // Essentially phantom calls - so we'll call them and reply instantly
-    public void lockWrite() {
-        isWriteLocked = true;
+    public KVServerStatus getServerStatus() {
+        return status;
     }
-    public void unlockWrite() {
-        isWriteLocked = false;
-    }
-
-    public void writeWriteLock() {
-        writeLock.writeLock().lock();
-    }
-
-    public void writeWriteUnlock() {
-        writeLock.writeLock().unlock();
-    }
-
-    public void writeReadLock() {
-        writeLock.readLock().lock();
-    }
-
-    public void writeReadUnlock() {
-        writeLock.readLock().unlock();
-    }
-
-    public void versionWriteLock() {
-        versionLock.writeLock().lock();
-    }
-
-    public void versionWriteUnlock() {
-        versionLock.writeLock().unlock();
-    }
-
-    public void versionReadLock() {
-        versionLock.readLock().lock();
-    }
-
-    public void versionReadUnlock() {
-        versionLock.readLock().unlock();
-    }
-
     public void moveData() {}
 
-    public boolean isWriteLocked() {
-        return isWriteLocked;
-    }
-
-    public void updateVersion() {
-        version += 1;
-        version %= 10;
-    }
-
-    public int getVersion() {
-        return version;
+    public void blockStorageWrites() {
+        storageManager.blockWrites();
     }
 
     public void updateMetadata(TreeSet<ECSNode> metadata) {
@@ -254,7 +203,7 @@ public class KVServer extends Thread {
         }
 
         try { 
-            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath, this);
+            this.storageManager = new StorageManager(this.policy, cacheSize, storagePath, status);
         } catch (FileNotFoundException fnfe) {
             System.out.println("Could not find " + storagePath + ". Please try again");
             System.exit(1);
