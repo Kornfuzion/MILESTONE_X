@@ -51,5 +51,25 @@ public class ECSClientTest extends TestCase {
 		System.out.println("hashing size: " + hRSize);
 		assertTrue(hRSize == 3);
 	}
+
+	@Test
+	public void testStart(){
+		client.initService(3, 1000, "lfu");
+		assertTrue(client.start());
+		//
+	}
+
+	@Test
+	public void testStop(){
+		client.initService(3,1000, "lfu");
+		assertTrue(client.stop());
+	}
+	
+	@Test
+	public void testShutDown(){
+		client.initService(3,1000, "lfu");
+		client.start();
+		assertTrue(client.shutDown());
+	}
 	
 }

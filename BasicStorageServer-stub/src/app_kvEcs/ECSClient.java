@@ -46,12 +46,14 @@ public class ECSClient {
 			String key = entry.getKey();
 			Socket socket = entry.getValue();
 			if(socket == null || key == null){
-				System.out.println("Socket or key is null");			
+				System.out.println("Socket or key is null");
+				return false;			
 			}
 			try {
 		        sendReceiveMessage(CommandType.START, socket);
 			} catch (Exception e) {
 				e.printStackTrace();
+				return false;
 			}
 
 			
@@ -67,13 +69,15 @@ public class ECSClient {
 			String key = entry.getKey();
 			Socket socket = entry.getValue();
 			if(socket == null || key == null){
-				System.out.println("shits null");			
+				System.out.println("shits null");
+				return false;			
 			}
 			try {
 				// Send start message to kvServer.
                 sendReceiveMessage(CommandType.STOP, socket);
 			} catch (Exception e) {
 				e.printStackTrace();
+				return false;
 			}
 
 			
