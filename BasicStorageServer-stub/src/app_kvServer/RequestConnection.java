@@ -86,6 +86,7 @@ public class RequestConnection implements Runnable {
                  * network problems*/   
                 } catch (Exception e) {
                    logger.error("Error! Connection lost!");
+		   //e.printStackTrace();	
                    break;
                 }               
             }

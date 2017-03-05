@@ -40,7 +40,6 @@ public class InteractionTest extends TestCase {
 		}
 
 		assertTrue(ex == null);
-                System.out.println("jamesisgay "+ response.getStatus().getStringName());                  
                 assertTrue(response.getStatus() == StatusType.PUT_SUCCESS);
 	}
 	

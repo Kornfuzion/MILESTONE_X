@@ -14,7 +14,8 @@ public class MetadataUtils {
     }
 
     public static ECSNode getSuccessor(String hash, TreeSet<ECSNode> hashRing, boolean lessThanEqualSuccessor) {
-        ECSNode successor = null;
+        if (hashRing == null) return null;
+	ECSNode successor = null;
         ECSNode first = null;
         for (ECSNode node : hashRing) {
             if (first == null) {

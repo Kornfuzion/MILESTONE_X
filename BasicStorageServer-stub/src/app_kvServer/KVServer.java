@@ -67,6 +67,8 @@ public class KVServer extends Thread {
         this.port = port;
         this.cacheSize = cacheSize;
         this.policy = CachePolicy.parseString(policy);
+	this.running = true;
+	this.metadata = null;
         String storagePath = System.getProperty("user.dir") + File.separator + "storage";
         try {
             File storageFolder = new File(storagePath);
@@ -180,7 +182,7 @@ public class KVServer extends Thread {
     }
 
     public boolean isSuccessor(ECSNode successor) {
-        return this.port == Integer.parseInt(successor.getPort());
+        return (successor == null) || (this.port == Integer.parseInt(successor.getPort()));
     }
 
     /**
@@ -268,8 +270,8 @@ public class KVServer extends Thread {
                 System.out.println("Usage: Server <port>!");
             } else {
                 int port = Integer.parseInt(args[0]);
-                //new KVServer(port, 256, "FIFO").start();
-                new KVServer(port).start();
+                new KVServer(port, 256, "FIFO").start();
+                //new KVServer(port).start();
             }
         } catch (IOException e) {
             System.out.println("Error! Unable to initialize logger!");
