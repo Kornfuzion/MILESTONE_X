@@ -18,11 +18,9 @@ public class ClientHandler implements MessageHandler {
     private static Logger logger = Logger.getLogger(ClientHandler.class.getName());
     private StorageManager storageManager;
     private KVServer server;
-    private ReadWriteLock writeLock; 
 
-    public ClientHandler(KVServer server, ReadWriteLock writeLock, StorageManager storageManager) {
+    public ClientHandler(KVServer server, StorageManager storageManager) {
         this.server = server;
-        this.writeLock = writeLock;
         this.storageManager = storageManager;
         try {
             new LogSetup("logs/server/server.log", Level.ALL);
@@ -59,17 +57,30 @@ public class ClientHandler implements MessageHandler {
         else {
             reply = "CORRECT SERVER: hashed key of [" + MetadataUtils.hash(message.getKey()) + "] served by server (port,IP) = (" + successor.getPort() + "," + successor.getIP() + ")" + " hashed at " + successor.getHashedValue();
         }
-        writeLock.readLock().lock();
+
+        int version = 0;
+        server.writeReadLock();
+        // Server is under write lock, return write lock message to client.
         if (server.isWriteLocked()) {
-            writeLock.readLock().unlock();
-            // NEED TO SEND BACK THE FACT THAT THE SERVER IS UNDER WRITELOCK.
+            server.writeReadUnlock();
+            // NEED TO ALLOW READS.
+            responseStatus = StatusType.SERVER_WRITE_LOCK;
+            response.setStatus(responseStatus)
+                    .setMessage(reply);
+            logger.info("REPLIED TO " + message.getCommand() + " WITH STATUS " + response.getStatus());
+            return response;
         }
-        writeLock.readLock().unlock();
+        // Server is not under write lock, get a version number.
+        server.versionReadLock();
+        version = server.getVersion();
+        server.versionReadUnlock();
+        server.writeReadUnlock();
+
         switch (message.getCommand()) {
             case GET:
                 String getValue = "";
                 if (!reroute){
-                    getValue = storageManager.get(message.getKey());
+                    getValue = storageManager.get(message.getKey(), version);
                     logger.info("RECEIVED GET REQUEST");
                     if (getValue != null && getValue.length() > 0) {
                         // GET SUCCESS
@@ -91,7 +102,7 @@ public class ClientHandler implements MessageHandler {
             case PUT:
                 if (!reroute) {
                     logger.info("RECEIVED PUT REQUEST");
-                    responseStatus = storageManager.set(message.getKey(), message.getValue());
+                    responseStatus = storageManager.set(message.getKey(), message.getValue(), version);
                 }
                 response
                     .setKey(message.getKey())
@@ -104,7 +115,7 @@ public class ClientHandler implements MessageHandler {
             case DELETE:
                 if (!reroute) {
                     logger.info("RECEIVED DELETE REQUEST");
-                    responseStatus = storageManager.delete(message.getKey()); 
+                    responseStatus = storageManager.delete(message.getKey(), version); 
                 }
                 response
                     .setKey(message.getKey())

@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import datastore.StorageManager;
 import cache.*;
+import app_kvServer.*;
 
 import common.messages.*;
 
@@ -39,11 +40,14 @@ public class StorageManagerTest extends TestCase {
     private StorageManager storageManager;  
     private String storagePath;
 
+    private final int version = 0;
+
     @Before
     public void setUp() throws FileNotFoundException {
         File testStorageFilesDirectory = new File("src/testing/resources/storagemanagertest");
         storagePath = testStorageFilesDirectory.getAbsolutePath();
-        storageManager = new StorageManager(CachePolicy.LRU, 10, storagePath);
+        KVServer server = new KVServer(8000, 256, "FIFO");
+        storageManager = new StorageManager(CachePolicy.LRU, 10, storagePath, server);
    }
 
     @After
@@ -56,7 +60,7 @@ public class StorageManagerTest extends TestCase {
     */
     @Test
     public void testGetExistingKey() {
-        String value = storageManager.get(testKey1);
+        String value = storageManager.get(testKey1, version);
         assertNotNull(value);
         assertEquals(value, testValue1);
     }
@@ -68,7 +72,7 @@ public class StorageManagerTest extends TestCase {
     public void testGetNonExistingKey() throws IOException{
         String filePath = storagePath + File.separator + testNonExistingKey;
         File file = new File(filePath);
-        String value = storageManager.get(testNonExistingKey);
+        String value = storageManager.get(testNonExistingKey, version);
         assertNull(value);
         assertFalse(file.exists());
         
@@ -85,7 +89,7 @@ public class StorageManagerTest extends TestCase {
         // Make sure that file does not already exist.
         file.delete();
         
-        StatusType status = storageManager.set(testKey2, testValue2);
+        StatusType status = storageManager.set(testKey2, testValue2, version);
         assertTrue((status == StatusType.PUT_SUCCESS) && file.exists());
 
         BufferedReader br = new BufferedReader(new FileReader(filePath));
@@ -104,13 +108,13 @@ public class StorageManagerTest extends TestCase {
         String filePath = storagePath + File.separator + testKey3Clean;
         File file = new File(filePath);
  
-        StatusType status = storageManager.set(testKey3, testValue3);
+        StatusType status = storageManager.set(testKey3, testValue3, version);
         assertTrue((status == StatusType.PUT_SUCCESS) && file.exists());
 
         // Key now exists and so does the file.
 
         String newValue = "newvalue";
-        status = storageManager.set(testKey3, newValue);
+        status = storageManager.set(testKey3, newValue, version);
         assertTrue((status == StatusType.PUT_UPDATE) && file.exists());
         
         BufferedReader br = new BufferedReader(new FileReader(filePath));
@@ -131,12 +135,12 @@ public class StorageManagerTest extends TestCase {
         String filePath = storagePath + File.separator + testKey4Clean;
         File file = new File(filePath);
         
-        StatusType status = storageManager.set(testKey4, testValue4);
+        StatusType status = storageManager.set(testKey4, testValue4, version);
         assertTrue((status == StatusType.PUT_SUCCESS) && file.exists());
 
         // At this point the key now exists and so does the file.
 
-        status = storageManager.delete(testKey4);
+        status = storageManager.delete(testKey4, version);
         assertTrue((status == StatusType.DELETE_SUCCESS) && !file.exists());
     }
 
@@ -147,7 +151,7 @@ public class StorageManagerTest extends TestCase {
     public void testDeleteNonExistingKey() {
         String filePath = storagePath + File.separator + testNonExistingKeyClean;
         File file = new File(filePath);
-        StatusType status = storageManager.delete(testNonExistingKey);
+        StatusType status = storageManager.delete(testNonExistingKey, version);
         assertTrue((status == StatusType.DELETE_ERROR) && !file.exists());
     }
 }

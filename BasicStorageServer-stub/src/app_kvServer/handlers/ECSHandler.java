@@ -48,10 +48,19 @@ public class ECSHandler implements MessageHandler {
                 server.shutdownServer();
                 break;
             case LOCK_WRITE:
+                server.writeWriteLock();
+                // Change server status to be write locked.
                 server.lockWrite();
+		server.versionWriteLock();
+                // Change server version
+                server.updateVersion();
+                server.versionWriteUnlock();
+                server.writeWriteUnlock();
                 break;
             case UNLOCK_WRITE:
+                server.writeWriteLock();
                 server.unlockWrite();
+                server.writeWriteUnlock();
                 break;
             case MOVE_DATA:
                 server.moveData();

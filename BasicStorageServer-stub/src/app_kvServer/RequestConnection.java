@@ -31,7 +31,6 @@ public class RequestConnection implements Runnable {
     private OutputStream output;
     private StorageManager storageManager;
     private KVServer server;
-    private ReadWriteLock writeLock; 
 
     private ArrayList<MessageHandler> messageHandlers;
     
@@ -39,12 +38,11 @@ public class RequestConnection implements Runnable {
      * Constructs a new RequestConnection object for a given TCP socket.
      * @param clientSocket the Socket object for the client connection.
      */
-    public RequestConnection(KVServer server, Socket clientSocket, ReadWriteLock writeLock, StorageManager storageManager) {
+    public RequestConnection(KVServer server, Socket clientSocket, StorageManager storageManager) {
         this.server = server;
         this.clientSocket = clientSocket;
         this.storageManager = storageManager;
         this.messageHandlers = new ArrayList<MessageHandler>();
-        this.writeLock = writeLock;
         addMessageHandlers();
         try {
             new LogSetup("logs/server/server.log", Level.ALL);
@@ -54,7 +52,7 @@ public class RequestConnection implements Runnable {
     }
     
     public void addMessageHandlers() {
-        messageHandlers.add(new ClientHandler(server, writeLock, storageManager));
+        messageHandlers.add(new ClientHandler(server, storageManager));
         messageHandlers.add(new ECSHandler(this, server));
     }
 

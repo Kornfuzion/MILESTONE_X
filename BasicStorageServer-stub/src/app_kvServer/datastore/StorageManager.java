@@ -4,6 +4,7 @@ import cache.Cache;
 import cache.CacheManager;
 import cache.CachePolicy;
 import storage.Storage;
+import app_kvServer.*;
 
 import common.messages.*;
 
@@ -14,6 +15,9 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 /**
 * Handles acceses to storage (which includes the cache).
 */
@@ -21,7 +25,7 @@ public class StorageManager {
    
     private CacheManager cacheManager;
     private Storage storage;
-    
+    private KVServer server; 
     private static Logger logger = Logger.getLogger(StorageManager.class.getName());
     
     /**
@@ -31,10 +35,11 @@ public class StorageManager {
     * @param storageDirectory The path where a the folder "storage" will be created for persistent storage.
     * @throws FileNotFoundException If it is unable to find the path indicated by storageDirectory.
     */
-    public StorageManager(CachePolicy policy, int cacheSize, String storageDirectory) throws FileNotFoundException {
+    public StorageManager(CachePolicy policy, int cacheSize, String storageDirectory, KVServer server) throws FileNotFoundException {
         super();
         this.cacheManager =  new CacheManager(policy, cacheSize); 
         this.storage = new Storage(storageDirectory, this.cacheManager);
+    this.server = server;
         try {
             new LogSetup("logs/server/storageManager.log", Level.ALL);
         } catch (IOException e) {
@@ -49,7 +54,7 @@ public class StorageManager {
     * @param key The key associated with the desired value.
     * @return The value associated with the key. Returns null if key does not exist or an error occurs. 
     */ 
-    public String get(String key) {
+    public String get(String key, int version) {
         if (key == null) {
             logger.info("Server GET rejecting null key");
             return null;
@@ -64,15 +69,22 @@ public class StorageManager {
     * @param value The value belonging to the key-value pair.
     * @return A {@link StatusType} indicating the status of the insert opertation.
     */
-    public StatusType set(String key, String value){
+    public StatusType set(String key, String value, int version){
+        server.versionReadLock();
+        if (version != server.getVersion()) {
+            server.versionReadUnlock();
+            return StatusType.SERVER_WRITE_LOCK;
+        }
         if (key == null) {
             logger.info("Server PUT rejecting null key");
+            server.versionReadUnlock();
             return StatusType.PUT_ERROR;
         }
 
         logger.info("Server SET with Key: " + key + " Value: " + value);
 
         StatusType status = storage.put(key, value);
+        server.versionReadUnlock();
         return status;
     }
 
@@ -81,15 +93,22 @@ public class StorageManager {
     * @param key The key belonging to the key-value pair.
     * @return A {@link StatusType} indicating the status of the delete operation.
     */
-    public StatusType delete(String key) {
+    public StatusType delete(String key, int version) {
+        server.versionReadLock();
+        if (version != server.getVersion()) {
+            server.versionReadUnlock();
+            return StatusType.SERVER_WRITE_LOCK;
+        }
         if (key == null) {
             logger.info("Server DELETE rejecting null key");
+            server.versionReadUnlock();
             return StatusType.DELETE_ERROR;
         }
     
         logger.info("Server DELETE with Key: " + key);
 
         StatusType status = storage.delete(key);
+        server.versionReadUnlock();
         return status;
     }
 }
