@@ -42,13 +42,33 @@ public class ClientHandler implements MessageHandler {
                         .setStatus(StatusType.ERROR);
         }
 
-        serverStatus.metadataReadLock();
         KVMessage response = new KVMessage(message.getCommand());
         StatusType responseStatus = StatusType.ERROR;
+        String reply = "";
 
+        int version = 0;
+		// Checking for if server is write locked.
+		if (message.getCommand() == CommandType.PUT || message.getCommand() == CommandType.DELETE) {
+        	serverStatus.writeReadLock();
+        	// Server is under write lock, return write lock message to client.
+        	if (serverStatus.isWriteLocked()) {
+            	serverStatus.writeReadUnlock();
+            	responseStatus = StatusType.SERVER_WRITE_LOCK;
+            	response.setStatus(responseStatus)
+                    	.setMessage(reply);
+            	logger.info("REPLIED TO " + message.getCommand() + " WITH STATUS " + response.getStatus());
+            	return response;
+        	}
+        	// Server is not under write lock, get a version number.
+        	serverStatus.versionReadLock();
+        	version = serverStatus.getVersion();
+        	serverStatus.versionReadUnlock();
+        	serverStatus.writeReadUnlock();
+		}
+
+		serverStatus.metadataReadLock();
         ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(message.getKey()), server.getMetadata());
         TreeSet<ECSNode> metadata = null;
-        String reply = "";
 
         boolean reroute = !server.isSuccessor(successor) || !server.alive();
 		serverStatus.metadataReadUnlock();
@@ -62,24 +82,6 @@ public class ClientHandler implements MessageHandler {
             reply = "CORRECT SERVER: hashed key of [" + MetadataUtils.hash(message.getKey()) + "] served by server (port,IP) = (" + successor.getPort() + "," + successor.getIP() + ")" + " hashed at " + successor.getHashedValue();
 		// TODO: NEED TO RETURN HERE FOR A REROUTE IMMEDIATELY
         }
-
-        int version = 0;
-        serverStatus.writeReadLock();
-        // Server is under write lock, return write lock message to client.
-        if (serverStatus.isWriteLocked()) {
-            serverStatus.writeReadUnlock();
-            // NEED TO ALLOW READS.
-            responseStatus = StatusType.SERVER_WRITE_LOCK;
-            response.setStatus(responseStatus)
-                    .setMessage(reply);
-            logger.info("REPLIED TO " + message.getCommand() + " WITH STATUS " + response.getStatus());
-            return response;
-        }
-        // Server is not under write lock, get a version number.
-        serverStatus.versionReadLock();
-        version = serverStatus.getVersion();
-        serverStatus.versionReadUnlock();
-        serverStatus.writeReadUnlock();
 
         switch (message.getCommand()) {
             case GET:

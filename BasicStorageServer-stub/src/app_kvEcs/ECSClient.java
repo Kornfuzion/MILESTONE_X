@@ -171,6 +171,9 @@ public class ECSClient {
             // Move data
             sendReceiveMessage(CommandType.MOVE_DATA, successorSocket);
 
+            // Update successor's metadata while under write lock
+            sendReceiveMessage(CommandType.LOCK_WRITE_UPDATE_METADATA, successorSocket);
+
             // Update all server metadata
             updateAllMetadata();
 

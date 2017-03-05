@@ -57,9 +57,6 @@ public class ECSHandler implements MessageHandler {
                 serverStatus.updateVersion();
                 serverStatus.versionWriteUnlock();
                 serverStatus.writeWriteUnlock();
-
-                server.blockStorageWrites();
-                // At this point we are guaranteed that there will be no further writes. 
                 break;
             case UNLOCK_WRITE:
                 serverStatus.writeWriteLock();
@@ -68,6 +65,7 @@ public class ECSHandler implements MessageHandler {
                 break;
             case MOVE_DATA:
                 server.blockStorageWrites();
+                // At this point we are guaranteed that there will be no further writes. 
                 //server.moveData();
                 break;
             case UPDATE_METADATA:
