@@ -46,8 +46,8 @@ public class StorageManagerTest extends TestCase {
     public void setUp() throws FileNotFoundException {
         File testStorageFilesDirectory = new File("src/testing/resources/storagemanagertest");
         storagePath = testStorageFilesDirectory.getAbsolutePath();
-        KVServer server = new KVServer(8000, 256, "FIFO");
-        storageManager = new StorageManager(CachePolicy.LRU, 10, storagePath, server);
+        KVServerStatus serverStatus = new KVServerStatus(0, null);
+        storageManager = new StorageManager(CachePolicy.LRU, 10, storagePath, serverStatus);
    }
 
     @After
@@ -60,6 +60,7 @@ public class StorageManagerTest extends TestCase {
     */
     @Test
     public void testGetExistingKey() {
+        // TODO(LOUIS): NEED TO UPDATE THIS TEST CASE
         String value = storageManager.get(testKey1, version);
         assertNotNull(value);
         assertEquals(value, testValue1);

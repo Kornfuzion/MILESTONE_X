@@ -5,7 +5,9 @@ import cache.CacheManager;
 import cache.CachePolicy;
 import storage.Storage;
 import app_kvServer.*;
+import app_kvEcs.*;
 
+import common.*;
 import common.messages.*;
 
 import logger.*;
@@ -25,7 +27,7 @@ public class StorageManager {
    
     private CacheManager cacheManager;
     private Storage storage;
-    private KVServer server; 
+    private KVServerStatus serverStatus; 
     private static Logger logger = Logger.getLogger(StorageManager.class.getName());
     
     /**
@@ -35,11 +37,11 @@ public class StorageManager {
     * @param storageDirectory The path where a the folder "storage" will be created for persistent storage.
     * @throws FileNotFoundException If it is unable to find the path indicated by storageDirectory.
     */
-    public StorageManager(CachePolicy policy, int cacheSize, String storageDirectory, KVServer server) throws FileNotFoundException {
+    public StorageManager(CachePolicy policy, int cacheSize, String storageDirectory, KVServerStatus serverStatus) throws FileNotFoundException {
         super();
         this.cacheManager =  new CacheManager(policy, cacheSize); 
         this.storage = new Storage(storageDirectory, this.cacheManager);
-    this.server = server;
+        this.serverStatus = serverStatus;
         try {
             new LogSetup("logs/server/storageManager.log", Level.ALL);
         } catch (IOException e) {
@@ -55,11 +57,38 @@ public class StorageManager {
     * @return The value associated with the key. Returns null if key does not exist or an error occurs. 
     */ 
     public String get(String key, int version) {
+        serverStatus.readReadLock();
+        if (serverStatus.stopServer()) {
+            serverStatus.readReadUnlock();
+            //TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
+            return null;
+        }
+        serverStatus.metadataReadLock();
+        try {
+            ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(key), serverStatus.getMetadata()); 
+            if (serverStatus.getPort() != Integer.parseInt(successor.getPort())) {
+                // Need to reroute the read.
+
+                serverStatus.metadataReadUnlock();
+                serverStatus.readReadUnlock();
+                // TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
+                return null;
+            }
+        } catch (Exception e) {
+            serverStatus.metadataReadUnlock();
+            serverStatus.readReadUnlock();
+            // TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
+            return null;
+        }
+        serverStatus.metadataReadUnlock();  
+        // Don't need to reroute the read.
         if (key == null) {
             logger.info("Server GET rejecting null key");
+            serverStatus.readReadUnlock();
             return null;
         }
         logger.info("Server GET with Key: " + key);
+        serverStatus.readReadUnlock();
         return storage.get(key);    
     }
 
@@ -70,21 +99,21 @@ public class StorageManager {
     * @return A {@link StatusType} indicating the status of the insert opertation.
     */
     public StatusType set(String key, String value, int version){
-        server.versionReadLock();
-        if (version != server.getVersion()) {
-            server.versionReadUnlock();
+        serverStatus.versionReadLock();
+        if (version != serverStatus.getVersion()) {
+            serverStatus.versionReadUnlock();
             return StatusType.SERVER_WRITE_LOCK;
         }
         if (key == null) {
             logger.info("Server PUT rejecting null key");
-            server.versionReadUnlock();
+            serverStatus.versionReadUnlock();
             return StatusType.PUT_ERROR;
         }
 
         logger.info("Server SET with Key: " + key + " Value: " + value);
 
         StatusType status = storage.put(key, value);
-        server.versionReadUnlock();
+        serverStatus.versionReadUnlock();
         return status;
     }
 
@@ -94,21 +123,29 @@ public class StorageManager {
     * @return A {@link StatusType} indicating the status of the delete operation.
     */
     public StatusType delete(String key, int version) {
-        server.versionReadLock();
-        if (version != server.getVersion()) {
-            server.versionReadUnlock();
+        serverStatus.versionReadLock();
+        if (version != serverStatus.getVersion()) {
+            serverStatus.versionReadUnlock();
             return StatusType.SERVER_WRITE_LOCK;
         }
         if (key == null) {
             logger.info("Server DELETE rejecting null key");
-            server.versionReadUnlock();
+            serverStatus.versionReadUnlock();
             return StatusType.DELETE_ERROR;
         }
     
         logger.info("Server DELETE with Key: " + key);
 
         StatusType status = storage.delete(key);
-        server.versionReadUnlock();
+        serverStatus.versionReadUnlock();
         return status;
+    }
+
+
+    public boolean blockReadsAndShutdown() {
+        serverStatus.readWriteLock();
+        serverStatus.setStopServer(true);
+        serverStatus.readWriteUnlock();
+        return true;
     }
 }
