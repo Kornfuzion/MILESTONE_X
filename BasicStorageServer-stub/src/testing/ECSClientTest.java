@@ -52,4 +52,28 @@ public class ECSClientTest extends TestCase {
 		assertTrue(hRSize == 3);
 	}
 	
+	@Test
+	public void testStart() {
+		assert(client.start());
+	}
+
+	@Test
+	public void testStop() {
+		assert(client.stop());
+	}
+
+	@Test
+	public void testAddNode() {
+		assert(client.addNode(500, "FIFO"));
+	}
+
+	@Test
+	public void testRemoveNode() {
+		assert(client.removeNode(0));
+	}
+
+	@Test
+	public void testShutDown() {
+		assert(client.shutDown());
+	}
 }

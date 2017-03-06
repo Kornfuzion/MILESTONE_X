@@ -27,10 +27,11 @@ public class AllTests {
 
         //clientSuite.addTestSuite(ConnectionTest.class);
         //clientSuite.addTestSuite(InteractionTest.class); 
-        clientSuite.addTestSuite(LruTest.class);
-        clientSuite.addTestSuite(LfuTest.class);
-        clientSuite.addTestSuite(FifoTest.class);
-        clientSuite.addTestSuite(StorageManagerTest.class);
+        //clientSuite.addTestSuite(MessageTest.class);
+        //clientSuite.addTestSuite(LruTest.class);
+        //clientSuite.addTestSuite(LfuTest.class);
+        //clientSuite.addTestSuite(FifoTest.class);
+        //clientSuite.addTestSuite(StorageManagerTest.class);
 	clientSuite.addTestSuite(ECSClientTest.class);
         return clientSuite;
     }
