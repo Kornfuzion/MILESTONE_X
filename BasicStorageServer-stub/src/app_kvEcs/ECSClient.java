@@ -55,8 +55,6 @@ public class ECSClient {
 				e.printStackTrace();
 				return false;
 			}
-
-			
 			// Wait for ack message from kvServer.
 		}
 		return true;
@@ -79,17 +77,15 @@ public class ECSClient {
 				e.printStackTrace();
 				return false;
 			}
-
-			
 			// Wait for ack message from kvServer.
 		}
 		return true;
 	}
 
-    public void removeNode(int serverIndex) {
+    public boolean removeNode(int serverIndex) {
         if (serverIndex >= hashRing.size()) {
             System.out.println("Index out of range");
-            return;
+            return false;
         }
         ECSNode removeNode = null;
         int ind = 0;
@@ -102,7 +98,7 @@ public class ECSClient {
         }
         if (removeNode == null) {
             // Should never get here.
-            return;
+            return false;
         }
         try {
             String hash = removeNode.getHashedValue();
@@ -137,17 +133,18 @@ public class ECSClient {
             availableMachines.add(removeNode); 
             // Remove node's socket.
             kvServerSockets.remove(removeNode.getHashedValue());
-
+		return true;
         } catch (Exception e) {
             e.printStackTrace();
+		return false;
         }
     }
 
-    public void addNode(int cacheSize, String cachePolicyString) {
+    public boolean addNode(int cacheSize, String cachePolicyString) {
         // No more available machines to add.
         if (availableMachines.size() == 0) {
             System.out.println("No more available machines to add");
-            return;
+            return false;
         }
         try {
 			String script = "script.sh";
@@ -158,7 +155,7 @@ public class ECSClient {
 
 			if (hostname == null) {
 				System.out.println("Could not get hostname of machine. Please restart");
-				return;
+				return false;
 			}	 
 
             ECSNode node = availableMachines.pollFirst();
@@ -202,8 +199,10 @@ public class ECSClient {
 
             // Unlock successor
             sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+		return true;
         } catch (Exception e) {
             e.printStackTrace();
+		return false;
         }
      }
 
@@ -301,8 +300,8 @@ public class ECSClient {
             }
         } catch (Exception e) {
             System.out.println("Could not shut down all servers");
+		return false;
         }
-	
 		return true;
 	}
 

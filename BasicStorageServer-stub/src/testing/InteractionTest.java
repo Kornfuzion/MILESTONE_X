@@ -10,7 +10,7 @@ public class InteractionTest extends TestCase {
 
 	private KVStore kvClient;
 
-        @BeforeClass	
+     @BeforeClass	
 	public void setUp() {
 		kvClient = new KVStore("localhost", 50000);
 		try {
@@ -24,6 +24,25 @@ public class InteractionTest extends TestCase {
 	}
 	
 	
+	@Test
+
+	public void testGet() {
+		String key = "fooget";
+		String value = "barget";
+		KVMessage response = null;
+		Exception ex = null;
+
+			try {
+				kvClient.put(key, value);
+				response = kvClient.get(key);
+			} catch (Exception e) {
+				ex = e;
+                e.printStackTrace();
+			}
+		
+		assertTrue(ex == null && response.getValue().equals(value));
+	}	
+/*
 	@Test
 	public void testPut() {
 		String key = "fooput";
@@ -41,23 +60,6 @@ public class InteractionTest extends TestCase {
 
 		assertTrue(ex == null);
                 assertTrue(response.getStatus() == StatusType.PUT_SUCCESS);
-	}
-	
-	@Test
-	public void testPutDisconnected() {
-		kvClient.disconnect();
-		String key = "fooputd";
-		String value = "barputd";
-		Exception ex = null;
-
-		try {
-			kvClient.put(key, value);
-		} catch (Exception e) {
-			ex = e;
-		}
-
-		assertNotNull(ex);
- 
 	}
 
 	@Test
@@ -99,23 +101,6 @@ public class InteractionTest extends TestCase {
 
 		assertTrue(ex == null && response.getStatus() == StatusType.DELETE_SUCCESS);
 	}
-	
-	@Test
-	public void testGet() {
-		String key = "fooget";
-		String value = "barget";
-		KVMessage response = null;
-		Exception ex = null;
-
-			try {
-				kvClient.put(key, value);
-				response = kvClient.get(key);
-			} catch (Exception e) {
-				ex = e;
-			}
-		
-		assertTrue(ex == null && response.getValue().equals(value));
-	}
 
 	@Test
 	public void testGetUnsetValue() {
@@ -124,7 +109,7 @@ public class InteractionTest extends TestCase {
 		Exception ex = null;
 
 		try {
-		        response = kvClient.get(key);
+		    response = kvClient.get(key);
 		} catch (Exception e) {
 			ex = e;
 		}
@@ -132,6 +117,21 @@ public class InteractionTest extends TestCase {
 		assertTrue(ex == null && response.getStatus() == StatusType.GET_ERROR);
 	}
 	
+	@Test
+	public void testPutDisconnected() {
+		kvClient.disconnect();
+		String key = "fooputd";
+		String value = "barputd";
+		Exception ex = null;
 
+		try {
+			kvClient.put(key, value);
+		} catch (Exception e) {
+			ex = e;
+		}
 
+		assertNotNull(ex);
+
+	}
+*/
 }
