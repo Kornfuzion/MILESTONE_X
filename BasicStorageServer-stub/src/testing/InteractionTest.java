@@ -42,7 +42,7 @@ public class InteractionTest extends TestCase {
 		
 		assertTrue(ex == null && response.getValue().equals(value));
 	}	
-/*
+
 	@Test
 	public void testPut() {
 		String key = "fooput";
@@ -133,5 +133,4 @@ public class InteractionTest extends TestCase {
 		assertNotNull(ex);
 
 	}
-*/
 }

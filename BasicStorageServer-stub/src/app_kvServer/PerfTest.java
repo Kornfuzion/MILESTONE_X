@@ -19,7 +19,7 @@ import java.io.IOException;
 
 public class PerfTest {
 	public static void main(String args[]){
-		System.out.println("Starting Perftest Main");
+/*		System.out.println("Starting Perftest Main");
 		final int numThreads = 500;
 		//String storagePath = System.getProperty("user.dir") + File.separator + "storage";
 		//StorageManager storageManager = new StorageManager("LRU", 100, storagePath);
@@ -62,7 +62,7 @@ public class PerfTest {
 			System.out.println("file not found in perf test");
 		} catch (IOException e){
 			System.out.println("ioexception found in perftest");
-		}
+		}*/
 
 	}
 }

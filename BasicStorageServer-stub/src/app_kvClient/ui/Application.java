@@ -28,7 +28,7 @@ public class Application implements ClientSocketListener {
     private static final int VALUE_SIZE_LIMIT = 120 * 1024;
 
     private static String ROOT_ADDRESS = "localhost";
-    private static int ROOT_PORT = 3930;
+    private static int ROOT_PORT = 9000;
     
     private TreeSet<ECSNode> metadata;
 

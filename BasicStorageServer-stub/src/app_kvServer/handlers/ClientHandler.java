@@ -87,7 +87,8 @@ public class ClientHandler implements MessageHandler {
             case GET:
                 String getValue = "";
                 if (!reroute){
-                    getValue = storageManager.get(message.getKey(), version);
+                    response = storageManager.get(message.getKey(), version);
+                    
                     logger.info("RECEIVED GET REQUEST");
                     if (getValue != null && getValue.length() > 0) {
                         // GET SUCCESS
@@ -100,7 +101,6 @@ public class ClientHandler implements MessageHandler {
                 }
                 response
                     .setKey(message.getKey())
-                    .setValue(getValue)
                     .setStatus(responseStatus)
                     .setMetadata(metadata)
                     .setMessage(reply);

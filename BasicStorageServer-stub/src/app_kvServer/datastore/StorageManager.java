@@ -17,8 +17,7 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.*;
 
 /**
 * Handles acceses to storage (which includes the cache).
@@ -56,40 +55,40 @@ public class StorageManager {
     * @param key The key associated with the desired value.
     * @return The value associated with the key. Returns null if key does not exist or an error occurs. 
     */ 
-    public String get(String key, int version) {
+    public KVMessage get(String key, int version) {
         serverStatus.readReadLock();
         if (serverStatus.stopServer()) {
             serverStatus.readReadUnlock();
             //TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
-            return null;
+            return new KVMessage(CommandType.GET).setStatus(StatusType.SERVER_STOPPED);
         }
         serverStatus.metadataReadLock();
         try {
             ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(key), serverStatus.getMetadata()); 
             if (serverStatus.getPort() != Integer.parseInt(successor.getPort())) {
                 // Need to reroute the read.
-
+                TreeSet<ECSNode> metadata = serverStatus.getMetadata();
                 serverStatus.metadataReadUnlock();
                 serverStatus.readReadUnlock();
                 // TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
-                return null;
+                return new KVMessage(CommandType.GET).setStatus(StatusType.REROUTE).setMetadata(metadata);
             }
         } catch (Exception e) {
             serverStatus.metadataReadUnlock();
             serverStatus.readReadUnlock();
             // TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
-            return null;
+            return new KVMessage(CommandType.GET).setStatus(StatusType.ERROR);
         }
         serverStatus.metadataReadUnlock();  
         // Don't need to reroute the read.
-        if (key == null) {
-            logger.info("Server GET rejecting null key");
-            serverStatus.readReadUnlock();
-            return null;
-        }
+
         logger.info("Server GET with Key: " + key);
         serverStatus.readReadUnlock();
-        return storage.get(key);    
+        String value = storage.get(key);
+        if (value == null) {
+            return new KVMessage(CommandType.GET).setStatus(StatusType.GET_ERROR);  
+        }
+        return new KVMessage(CommandType.GET).setStatus(StatusType.GET_SUCCESS).setValue(value); 
     }
 
     /**

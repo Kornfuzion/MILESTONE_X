@@ -63,13 +63,12 @@ public class KVServer extends Thread {
 
     // Leave this constructor as legacy, but from now on we will only be using the constructor with port number
     // The ECS client shall start each server with its respective port and initialize through messages
-    public KVServer(int port, int cacheSize, String policy) {
+    public KVServer(int port, int cacheSize, String policy, TreeSet<ECSNode> metadata) {
         this.port = port;
         this.cacheSize = cacheSize;
         this.policy = CachePolicy.parseString(policy);
 	    this.running = true;
-	    this.metadata = null;
-        this.status = new KVServerStatus(port, new TreeSet<ECSNode>());
+        this.status = new KVServerStatus(port, metadata);
         String storagePath = System.getProperty("user.dir") + File.separator + "storage";
         try {
             File storageFolder = new File(storagePath);

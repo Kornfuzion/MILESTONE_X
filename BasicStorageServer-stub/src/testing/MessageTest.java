@@ -31,7 +31,7 @@ public class MessageTest extends TestCase {
         String key = "TESTKEY";
 	String value = "TESTVALUE";
         StatusType status = StatusType.GET_SUCCESS;
-        TreeSet<ECSNode> metadata = new TreeSet<ECSNode>();
+        TreeSet<ECSNode> metadata = new TreeSet<ECSNode>(new hashRingComparator());
         Map<String,Integer> countNodes = new HashMap<String,Integer>();
         metadata.add(new ECSNode("5000", "127.0.0.1"));
         metadata.add(new ECSNode("5001", "127.0.0.1"));

@@ -68,9 +68,9 @@ public class StorageManagerTest extends TestCase {
     @Test
     public void testGetExistingKey() {
         // TODO(LOUIS): NEED TO UPDATE THIS TEST CASE
-        String value = storageManager.get(testKey1, version);
-        assertNotNull(value);
-        assertEquals(value, testValue1);
+        KVMessage m = storageManager.get(testKey1, version);
+        assertNotNull(m);
+        assertEquals(m.getValue(), testValue1);
     }
 
     /**
@@ -80,8 +80,8 @@ public class StorageManagerTest extends TestCase {
     public void testGetNonExistingKey() throws IOException{
         String filePath = storagePath + File.separator + testNonExistingKey;
         File file = new File(filePath);
-        String value = storageManager.get(testNonExistingKey, version);
-        assertNull(value);
+        KVMessage m = storageManager.get(testNonExistingKey, version);
+        assert(m.getValue().length() == 0);
         assertFalse(file.exists());
         
     }
