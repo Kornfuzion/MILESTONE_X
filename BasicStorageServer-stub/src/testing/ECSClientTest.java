@@ -43,14 +43,6 @@ public class ECSClientTest extends TestCase {
 			}
 		}
 	}
-
-	@Test
-	public void testInitService(){
-		client.initKVService(3, 1000, "lfu");
-		int hRSize = client.getHashRingSize();
-		System.out.println("hashing size: " + hRSize);
-		assertTrue(hRSize == 3);
-	}
 	
 	@Test
 	public void testStart() {

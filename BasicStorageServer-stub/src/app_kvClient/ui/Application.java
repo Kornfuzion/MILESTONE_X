@@ -28,15 +28,18 @@ public class Application implements ClientSocketListener {
     private static final int VALUE_SIZE_LIMIT = 120 * 1024;
 
     private static String ROOT_ADDRESS = "localhost";
-    private static int ROOT_PORT = 9000;
+    private static int ROOT_PORT = 4000;
     
     private TreeSet<ECSNode> metadata;
 
     private String serverAddress;
     private int serverPort;
 
-    public Application() {
+	private boolean synchronous;
+
+    public Application(boolean synchronous) {
         this.metadata = null;
+		this.synchronous = synchronous;
         initMetadata();
     }    
 
@@ -181,6 +184,22 @@ public class Application implements ClientSocketListener {
         }
     }
     
+	public KVMessage get(String key) throws Exception {
+        connectToAppropriateServer(key);
+        client.get(key);
+		KVMessage reply = client.getLatestMessage();
+		handleNewMessage(reply);
+		return reply;
+	}
+
+	public KVMessage put(String key, String value) throws Exception {
+        connectToAppropriateServer(key);
+        client.put(key, value);
+		KVMessage reply = client.getLatestMessage();
+		handleNewMessage(reply);
+		return reply;
+	}
+
     private void sendChatMessage(String msg) {
         try {
             client.sendChatMessage(msg);
@@ -194,7 +213,9 @@ public class Application implements ClientSocketListener {
             throws UnknownHostException, IOException {
         client = new KVClient(address, port);
         client.addListener(this);
-        client.start();
+		if (!synchronous) {
+        	client.start();
+		}
     }
     
     private void disconnect() {
@@ -319,6 +340,9 @@ public class Application implements ClientSocketListener {
     @Override
     public void handleNewMessage(KVMessage message) throws Exception {
         if(!stop) {
+            System.out.println(message.getStatus().getStringName() + 
+                               bracketizeArgs(message.getKey(), message.getValue(), message.getMessage()));
+            System.out.print(PROMPT);
             if (message.getCommand() == CommandType.INIT_CLIENT_METADATA ||
                (message.getStatus() == StatusType.REROUTE)) {
                     this.metadata = message.getMetadata();
@@ -344,11 +368,13 @@ public class Application implements ClientSocketListener {
                                 client.delete(key);
                                 break;
                         }
+						if (synchronous) {
+							KVMessage reply = client.getLatestMessage();
+							//System.out.println(reply.getStatus().getStringName() + bracketizeArgs(reply.getKey(), reply.getValue(), reply.getMessage()));
+							//System.out.print(PROMPT);
+						}
                     }
             }
-            System.out.println(message.getStatus().getStringName() + 
-                               bracketizeArgs(message.getKey(), message.getValue(), message.getMessage()));
-            System.out.print(PROMPT);
         }
     }
     
@@ -377,6 +403,10 @@ public class Application implements ClientSocketListener {
         try {
             connect(ROOT_ADDRESS, ROOT_PORT);
             client.initMetadata();
+			if (synchronous) {
+				this.metadata = client.getLatestMessage().getMetadata();
+				disconnect();
+			}
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -389,7 +419,7 @@ public class Application implements ClientSocketListener {
     public static void main(String[] args) {
         try {
             new LogSetup("logs/client/client.log", Level.OFF);
-            Application app = new Application();
+            Application app = new Application(false);
             app.run();
         } catch (IOException e) {
             System.out.println("Error! Unable to initialize logger!");
