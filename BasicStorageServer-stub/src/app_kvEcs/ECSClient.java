@@ -206,8 +206,8 @@ public class ECSClient {
         }
      }
 
-	public void initKVService(int numberOfNodes, int cacheSize, String replacementStrategy){
-		runConfig("testECSClient.config");
+	public void initKVService(int numberOfNodes, int cacheSize, String replacementStrategy, String configFile){
+		runConfig(configFile);
 		try {
 			String script = "script.sh";
 			Process p = Runtime.getRuntime().exec("hostname -f");
@@ -353,7 +353,7 @@ public class ECSClient {
 			FileReader fileReader = new FileReader(file);
 			BufferedReader bufferedReader = new BufferedReader(fileReader);
 			StringBuffer stringBuffer = new StringBuffer();
-		
+
 			String line;
 			while((line = bufferedReader.readLine()) != null){
 				String[] splited = line.split(" ");

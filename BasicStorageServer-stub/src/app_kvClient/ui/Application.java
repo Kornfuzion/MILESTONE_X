@@ -200,6 +200,14 @@ public class Application implements ClientSocketListener {
 		return reply;
 	}
 
+    public KVMessage getServerStatus() throws Exception {
+        connect(ROOT_ADDRESS, ROOT_PORT);
+        client.initMetadata();
+        KVMessage message = client.getLatestMessage();
+        disconnect();
+        return message;
+    }
+
     private void sendChatMessage(String msg) {
         try {
             client.sendChatMessage(msg);
@@ -399,12 +407,13 @@ public class Application implements ClientSocketListener {
         System.out.println(PROMPT + "Error! " +  error);
     }
     
-    private void initMetadata() {
+    public void initMetadata() {
         try {
             connect(ROOT_ADDRESS, ROOT_PORT);
             client.initMetadata();
 			if (synchronous) {
-				this.metadata = client.getLatestMessage().getMetadata();
+                KVMessage message = client.getLatestMessage();
+				this.metadata = message.getMetadata();
 				disconnect();
 			}
         } catch (Exception e) {

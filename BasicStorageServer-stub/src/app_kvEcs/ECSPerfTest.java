@@ -38,7 +38,7 @@ public class ECSPerfTest {
 		int middle = Integer.parseInt(args[1]);
 		System.out.println("Starting PerfTest Main");
 		ECSClient client = new ECSClient();
-		client.initKVService(5, 100, "FIFO");
+		client.initKVService(5, 100, "FIFO", "testECSClient.config");
 		client.start();
 		Map map = new HashMap<String, String>();
 		try{

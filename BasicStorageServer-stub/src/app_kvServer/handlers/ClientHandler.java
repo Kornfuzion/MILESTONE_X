@@ -39,7 +39,7 @@ public class ClientHandler implements MessageHandler {
         // Block the request, reply with an ERROR message
         if (!server.isRunning() && server.alive()) {
            return new KVMessage(message.getCommand())
-                        .setStatus(StatusType.ERROR);
+                        .setStatus(StatusType.SERVER_STOPPED);
         }
 
         KVMessage response = new KVMessage(message.getCommand());
