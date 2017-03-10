@@ -142,4 +142,5 @@ public class ECSClientTest extends TestCase {
 		client.removeNode(0);
         assertTrue(client.getHashRingSize() == 1);
 	}
+
 }

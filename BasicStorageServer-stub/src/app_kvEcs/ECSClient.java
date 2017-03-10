@@ -319,6 +319,7 @@ public class ECSClient {
                 sendMessage(CommandType.SHUT_DOWN, socket);
             }
         } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("Could not shut down all servers");
         return false;
         }

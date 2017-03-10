@@ -48,10 +48,10 @@ public class ECSClientApplication {
 					//client.add(Integer.parseInt(tokens[1]), tokens[2]);
 				}
 				else{
-					System.out.println("Not the correct amount of arguments for command: add");			
+					System.out.println(PROMPT + "incorrect number of arguments for command: add");			
 				}
 			}else{
-				System.out.println("Service was not initialized yet");			
+				System.out.println(PROMPT + "service was not initialized yet");			
 			}
 		}
 		else if(tokens[0].equals("remove")){
@@ -64,10 +64,10 @@ public class ECSClientApplication {
 					}
 				}
 				else{
-					System.out.println("Not the correct amount of arguments for command: remove");			
+					System.out.println(PROMPT + "incorrect number of arguments for command: remove");			
 				}
 			}else{
-				System.out.println("Service was not initialized yet");			
+				System.out.println(PROMPT + "service was not initialized yet");			
 			}
 		}
 		else if(tokens[0].equals("init")){
@@ -87,10 +87,10 @@ public class ECSClientApplication {
 					}
 				}
 				else{
-					System.out.println("Not the correct amount of arguments for command: init");			
+					System.out.println(PROMPT + "incorrect number of arguments for command: init");			
 				}
 			}else{
-				System.out.println("init already happened, cannot init again");
+				System.out.println(PROMPT + "init already happened, cannot init again");
 			}
 		}
 		else if(tokens[0].equals("start")){
@@ -99,10 +99,10 @@ public class ECSClientApplication {
 					client.start();
 				}
 				else{
-					System.out.println("Not the correct amount of arguments for command: start");			
+					System.out.println(PROMPT + "incorrect number of arguments for command: start");			
 				}
 			}else{
-				System.out.println("Service was not initialized yet");			
+				System.out.println(PROMPT + "service was not initialized yet");			
 			}
 		}
 		else if(tokens[0].equals("stop")){
@@ -111,18 +111,19 @@ public class ECSClientApplication {
 					client.stop();
 				}
 				else{
-					System.out.println("Not the correct amount of arguments for command: stop");			
+					System.out.println(PROMPT + "incorrect number of arguments for command: stop");			
 				}
 			}else{
-				System.out.println("Service was not initialized yet");			
+				System.out.println(PROMPT + "service was not initialized yet");			
 			}
 		}
 		else if(tokens[0].equals("shutdown")){
 			if(tokens.length == 1 ){
                     client.shutDown();
+                    initFlag = false;
 				}
 				else{
-					System.out.println("Not the correct amount of arguments for command: shutdown");			
+					System.out.println(PROMPT + "incorrect number of arguments for command: shutdown");			
 				}
 		}
 		else if(tokens[0].equals("removenode")){
@@ -132,7 +133,7 @@ public class ECSClientApplication {
                     serverIndex = Integer.parseInt(tokens[1]);
 				    client.removeNode(serverIndex);
                 } catch (Exception e) {
-                    System.out.println("Server index must be an integer");
+                    System.out.println(PROMPT + "server index must be an integer");
                 }
 			}
 		}
@@ -143,20 +144,48 @@ public class ECSClientApplication {
                     cacheSize = Integer.parseInt(tokens[1]);
 				    client.addNode(cacheSize, tokens[2]);
                 } catch (Exception e) {
-                    System.out.println("Cache size must be an integer.");
+                    System.out.println(PROMPT + "cache size must be an integer.");
                 }
 			}	
 		}
         else if(tokens[0].equals("exit")){
-            client.shutDown();
+            if (initFlag) {
+                client.shutDown();
+            }  
             System.exit(1);
         }
+        else if(tokens[0].equals("help")) {
+            printHelp();
+        }
 		else{
-			System.out.println("Unknown command");
-			//printHelp();		
+			System.out.println(PROMPT + "unknown command");
+			printHelp();		
 		}
 	}
-	
+
+    private void printHelp() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(PROMPT).append("ECS CLIENT HELP (Usage):\n");
+        sb.append(PROMPT);
+        sb.append("::::::::::::::::::::::::::::::::");
+        sb.append("::::::::::::::::::::::::::::::::\n");
+        sb.append(PROMPT).append("init <number of servers> <cache size> <cache replacement policy (LRU, LFU, FIFO)>");
+        sb.append("\t initializes the storage services given the provided parameters\n");
+        sb.append(PROMPT).append("start");
+        sb.append("\t\t\t\t\t\t\t\t\t\t starts the initialized storage servers\n");
+        sb.append(PROMPT).append("stop");
+        sb.append("\t\t\t\t\t\t\t\t\t\t\t stops the storage servers\n");
+        sb.append(PROMPT).append("addnode <cache size> <cache replacement policy (LRU, LFU, FIFO)>");
+        sb.append("\t\t\t adds a new server in the START state given the provided parameters\n");
+        sb.append(PROMPT).append("removenode <index of server>");
+        sb.append("\t\t\t\t\t\t\t\t removes a storage server given <index of server>\n");
+        sb.append(PROMPT).append("shutdown");
+        sb.append("\t\t\t\t\t\t\t\t\t\t shutsdown all of the storage servers\n"); 
+        sb.append(PROMPT).append("exit ");
+        sb.append("\t\t\t\t\t\t\t\t\t\t exits the ECS client and shutsdown all storage servers");
+        System.out.println(sb.toString());
+    }
+ 
 	public static void main (String[] args) {
 		try{
 			ECSClientApplication app = new ECSClientApplication();
