@@ -77,7 +77,14 @@ public class ECSClientApplication {
 					int cacheSize = Integer.parseInt(tokens[2]);
 					String policy = tokens[3];
 					initFlag = true;				
-					client.initKVService(numNodes, cacheSize, policy, "testECSClient.config");
+					int success = client.initKVService(numNodes, cacheSize, policy, "testECSClient.config");
+					// Failed to initialize the service.
+					if(success != 0) {
+						System.out.println(PROMPT + "Unable to initialize storage servers. Please make sure all ports are free. Shutting down ECS.");
+						client.shutDown();
+						System.out.println(PROMPT + "Exiting ECS.");
+           					System.exit(1);
+					}
 				}
 				else{
 					System.out.println("Not the correct amount of arguments for command: init");			

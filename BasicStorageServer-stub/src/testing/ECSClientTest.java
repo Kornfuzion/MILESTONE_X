@@ -25,13 +25,15 @@ public class ECSClientTest extends TestCase {
     public void tearDown() throws Exception{
         Process p = Runtime.getRuntime().exec("./killstuff.sh");
 	    p.waitFor();
+        // Wait for OS to free the socket.
+        Thread.sleep(3000);
     }
 	
 	@Test
 	public void testParseConfig(){
 		Exception ex = null;
 		try { 
-			client.runConfig("testECSClient2.config");
+			client.runConfig("./testECSClient2.config");
 		} catch (Exception e) {
 			ex = e;
 			ex.printStackTrace();			
@@ -54,7 +56,7 @@ public class ECSClientTest extends TestCase {
     */
     @Test
     public void testInit() throws Exception {
-        client.initKVService(1, 100, "FIFO", "testECSClient2.config");
+        client.initKVService(1, 100, "FIFO", "./testECSClient2.config");
         try {
 		    Thread.sleep(2000);
 		} catch (InterruptedException e) {
@@ -70,8 +72,9 @@ public class ECSClientTest extends TestCase {
     Tests if all the storage servers are in the stopped state after
     being stopped
     */
+    @Test
 	public void testStart() throws Exception {
-        client.initKVService(1, 100, "FIFO", "testECSClient2.config");
+        client.initKVService(1, 100, "FIFO", "./testECSClient2.config");
         // Start the storage servers
         try {
 		    Thread.sleep(2000);
@@ -91,7 +94,7 @@ public class ECSClientTest extends TestCase {
     */	
     @Test
 	public void testStop() throws Exception{
-        client.initKVService(1, 100, "FIFO", "testECSClient2.config");
+        client.initKVService(1, 100, "FIFO", "./testECSClient2.config");
        // Start the storage servers
         try {
 		    Thread.sleep(2000);
@@ -111,8 +114,8 @@ public class ECSClientTest extends TestCase {
     */
 	@Test
 	public void testAddNode() {
-        client.initKVService(1, 100, "FIFO", "testECSClient3.config");
-        assert(client.getHashRingSize() == 1);
+        client.initKVService(1, 100, "FIFO", "./testECSClient3.config");
+        assertTrue(client.getHashRingSize() == 1);
         try {
 		    Thread.sleep(2000);
 		} catch (InterruptedException e) {
@@ -120,16 +123,16 @@ public class ECSClientTest extends TestCase {
 		}
         client.start();
 		client.addNode(500, "FIFO");
-        assert(client.getHashRingSize() == 2);
+        assertTrue(client.getHashRingSize() == 2);
 	}
 
     /**
     Test if the ECS can remove a node.
     */
 	@Test
-	public void testRemoveNode() {
-        client.initKVService(2, 100, "FIFO", "testECSClient3.config");
-        assert(client.getHashRingSize() == 2);
+	public void testRemoveNode() throws Exception{
+        client.initKVService(2, 100, "FIFO", "./testECSClient3.config");
+        assertTrue(client.getHashRingSize() == 2);
         try {
 		    Thread.sleep(2000);
 		} catch (InterruptedException e) {
@@ -137,6 +140,6 @@ public class ECSClientTest extends TestCase {
 		}
         client.start();
 		client.removeNode(0);
-        assert(client.getHashRingSize() == 1);
+        assertTrue(client.getHashRingSize() == 1);
 	}
 }

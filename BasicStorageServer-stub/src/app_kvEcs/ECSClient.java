@@ -21,66 +21,66 @@ import common.*;
 import cache.*;
 
 public class ECSClient {
-	private TreeSet<ECSNode> hashRing;
-	private TreeSet<ECSNode> availableMachines;
-	private Comparator<ECSNode> comparator;	
-	private int totalNumberOfMachines;
-	private Process proc;
+    private TreeSet<ECSNode> hashRing;
+    private TreeSet<ECSNode> availableMachines;
+    private Comparator<ECSNode> comparator; 
+    private int totalNumberOfMachines;
+    private Process proc;
     public static String ROOT_HOST_ADDRESS = "127.0.0.1";
 
-	// Holds the communication socket to every KVServer
-	private Map<String, Socket> kvServerSockets;
+    // Holds the communication socket to every KVServer
+    private Map<String, Socket> kvServerSockets;
 
-	public ECSClient(){
-		this.comparator = new hashRingComparator();			
-		this.hashRing = new TreeSet<ECSNode>(comparator);
-		this.availableMachines = new TreeSet<ECSNode>(comparator);
-		this.kvServerSockets = new LinkedHashMap<String, Socket>();
-		totalNumberOfMachines = 0;
-	}
-	
-	public boolean start(){
-		//activate all the runningservers to start the service available
-		//send message to these servers to go for it.
-		for (Map.Entry<String, Socket> entry: kvServerSockets.entrySet()) {
-			String key = entry.getKey();
-			Socket socket = entry.getValue();
-			if(socket == null || key == null){
-				System.out.println("Socket or key is null");
-				return false;			
-			}
-			try {
-		        sendReceiveMessage(CommandType.START, socket);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return false;
-			}
-			// Wait for ack message from kvServer.
-		}
-		return true;
-	}
+    public ECSClient(){
+        this.comparator = new hashRingComparator();         
+        this.hashRing = new TreeSet<ECSNode>(comparator);
+        this.availableMachines = new TreeSet<ECSNode>(comparator);
+        this.kvServerSockets = new LinkedHashMap<String, Socket>();
+        totalNumberOfMachines = 0;
+    }
+    
+    public boolean start(){
+        //activate all the runningservers to start the service available
+        //send message to these servers to go for it.
+        for (Map.Entry<String, Socket> entry: kvServerSockets.entrySet()) {
+            String key = entry.getKey();
+            Socket socket = entry.getValue();
+            if(socket == null || key == null){
+                System.out.println("Socket or key is null");
+                return false;           
+            }
+            try {
+                sendReceiveMessage(CommandType.START, socket);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+            // Wait for ack message from kvServer.
+        }
+        return true;
+    }
 
-	public boolean stop(){
-		//stops serving requests to clients, but the processes are still alive???
-		//send message to these servers to stop serving requests
-		for (Map.Entry<String, Socket> entry: kvServerSockets.entrySet()) {
-			String key = entry.getKey();
-			Socket socket = entry.getValue();
-			if(socket == null || key == null){
-				System.out.println("shits null");
-				return false;			
-			}
-			try {
-				// Send start message to kvServer.
+    public boolean stop(){
+        //stops serving requests to clients, but the processes are still alive???
+        //send message to these servers to stop serving requests
+        for (Map.Entry<String, Socket> entry: kvServerSockets.entrySet()) {
+            String key = entry.getKey();
+            Socket socket = entry.getValue();
+            if(socket == null || key == null){
+                System.out.println("shits null");
+                return false;           
+            }
+            try {
+                // Send start message to kvServer.
                 sendReceiveMessage(CommandType.STOP, socket);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return false;
-			}
-			// Wait for ack message from kvServer.
-		}
-		return true;
-	}
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+            // Wait for ack message from kvServer.
+        }
+        return true;
+    }
 
     public boolean removeNode(int serverIndex) {
         if (serverIndex >= hashRing.size()) {
@@ -105,6 +105,15 @@ public class ECSClient {
             Socket removeSocket = kvServerSockets.get(hash); 
             hashRing.remove(removeNode);
             ECSNode successor = MetadataUtils.getSuccessor(hash, hashRing, false);
+            
+			// Removing the last node (no successor).
+			if (successor == null) {
+				sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
+            	sendReceiveMessage(CommandType.STOP, removeSocket);
+            	sendMessage(CommandType.SHUT_DOWN, removeSocket);
+				return true;
+			}        
+
             Socket successorSocket = kvServerSockets.get(successor.getHashedValue());                  
             
             // Lock the node to be removed.
@@ -133,10 +142,10 @@ public class ECSClient {
             availableMachines.add(removeNode); 
             // Remove node's socket.
             kvServerSockets.remove(removeNode.getHashedValue());
-		return true;
+        return true;
         } catch (Exception e) {
             e.printStackTrace();
-		return false;
+        return false;
         }
     }
 
@@ -147,38 +156,38 @@ public class ECSClient {
             return false;
         }
         try {
-			String script = "./script.sh";
-			Process p = Runtime.getRuntime().exec("hostname -f");
-			p.waitFor();
-			BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			String hostname = br.readLine();
+            String script = "./script.sh";
+            Process p = Runtime.getRuntime().exec("hostname -f");
+            p.waitFor();
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String hostname = br.readLine();
 
-			if (hostname == null) {
-				System.out.println("Could not get hostname of machine. Please restart");
-				return false;
-			}	 
+            if (hostname == null) {
+                System.out.println("Could not get hostname of machine. Please restart");
+                return false;
+            }    
 
             ECSNode node = availableMachines.pollFirst();
             p = Runtime.getRuntime().exec(script + " " + hostname + " " + node.getPort());
-			p.waitFor();
-		    hashRing.add(node);
+            p.waitFor();
+            hashRing.add(node);
 
-		    try {
-			    Thread.sleep(5000);
-		    } catch (InterruptedException e) {
-			    System.out.println(e);
-		    }
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                System.out.println(e);
+            }
 
             Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
-			kvServerSockets.put(node.getHashedValue(), kvServerSocket); 
+            kvServerSockets.put(node.getHashedValue(), kvServerSocket); 
             CachePolicy cachePolicy = CachePolicy.parseString(cachePolicyString);
             setMetadata(CommandType.INIT, hashRing, cacheSize, cachePolicy, kvServerSocket);
-	
-		    hashRing.add(node);
+    
+            hashRing.add(node);
 
             ECSNode successor = MetadataUtils.getSuccessor(node.getHashedValue(), hashRing, false);
             Socket successorSocket = kvServerSockets.get(successor.getHashedValue());
-		    
+            
             // INIT NEW SERVER
             setMetadata(CommandType.INIT, hashRing, cacheSize, cachePolicy, kvServerSocket);
 
@@ -199,86 +208,97 @@ public class ECSClient {
 
             // Unlock successor
             sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
-		return true;
+        return true;
         } catch (Exception e) {
             e.printStackTrace();
-		return false;
+        return false;
         }
      }
 
-	public void initKVService(int numberOfNodes, int cacheSize, String replacementStrategy, String configFile){
-		runConfig(configFile);
-		try {
-			String script = "./script.sh";
-			Process p = Runtime.getRuntime().exec("hostname -f");
-			p.waitFor();
-			BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			String hostname = br.readLine();
-			if (hostname == null) {
-				System.out.println("Could not get hostname of machine. Please restart");
-				System.exit(0);
-			}	
+    public int initKVService(int numberOfNodes, int cacheSize, String replacementStrategy, String configFile){
+        runConfig(configFile);
+        try {
+            String script = "./script.sh";
+            Process p = Runtime.getRuntime().exec("hostname -f");
+            p.waitFor();
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String hostname = br.readLine();
+            if (hostname == null) {
+                System.out.println("Could not get hostname of machine. Please restart");
+                System.exit(0);
+            }   
 
-			// Starting up the KVServers.
-			for (int i = 0; i < numberOfNodes; i++) {
-				ECSNode node = availableMachines.pollFirst();
-				p = Runtime.getRuntime().exec(script + " " + hostname + " " + node.getPort());
-				p.waitFor();
-				hashRing.add(node);
-			}
-			// Sleeping for 5s before trying to connect to the KVServers.
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				System.out.println(e);
-			}
+            // Starting up the KVServers.
+            for (int i = 0; i < numberOfNodes; i++) {
+                ECSNode node = availableMachines.pollFirst();
+                p = Runtime.getRuntime().exec(script + " " + hostname + " " + node.getPort());
+                p.waitFor();
+                hashRing.add(node);
+            }
+            // Sleeping for 5s before trying to connect to the KVServers.
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                System.out.println(e);
+                return 1;
+            }
 
-			// Connecting and initializing the KVServers
-			for (ECSNode node : hashRing) {
-				Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
-				kvServerSockets.put(node.getHashedValue(), kvServerSocket);
-                setMetadata(CommandType.INIT, 
-                            hashRing, 
-                            cacheSize, 
-                            CachePolicy.parseString(replacementStrategy), 
-                    kvServerSocket);
-			}
-		}catch (IOException e) {
-		 	e.printStackTrace();
-		} catch (InterruptedException ie) {
-			ie.printStackTrace();
-		} catch (Exception ge) { 
-			ge.printStackTrace();
-		}
-	}
+            // Connecting and initializing the KVServers
+            for (ECSNode node : hashRing) {
+                Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
+                kvServerSockets.put(node.getHashedValue(), kvServerSocket);
+                
+                try{
+                    setMetadata(CommandType.INIT, 
+                                hashRing, 
+                                cacheSize, 
+                                CachePolicy.parseString(replacementStrategy), 
+                        kvServerSocket);
+                } catch (Exception ge) {
+                    System.out.println("Unable to send metadata to server at port " 
+                                        + node.getPort() + ". It is most likely being used.");
+                    return 1;
+                }
+            }
+        }catch (IOException e) {
+            e.printStackTrace();
+            return 1;
+        } catch (InterruptedException ie) {
+            ie.printStackTrace();
+            return 1;
+        }
+
+        // Successfully initialized all servers.
+        return 0;
+    }
 
     public void setMetadata(CommandType commandType, 
                             TreeSet<ECSNode> hashRing, 
                             int cacheSize, 
                             CachePolicy cachePolicy, 
                             Socket socket) throws Exception{
-		KVMessage ringMessage = new KVMessage(commandType)
-										.setMetadata(hashRing)
-										.setCacheSize(cacheSize)
-										.setCachePolicy(cachePolicy)
-										.setClientType(ClientType.ECS);  
-		KVMessageUtils.sendMessage(ringMessage, socket.getOutputStream());
-		KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
-		System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+        KVMessage ringMessage = new KVMessage(commandType)
+                                        .setMetadata(hashRing)
+                                        .setCacheSize(cacheSize)
+                                        .setCachePolicy(cachePolicy)
+                                        .setClientType(ClientType.ECS);  
+        KVMessageUtils.sendMessage(ringMessage, socket.getOutputStream());
+        KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
+        System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
     }
 
     public void sendReceiveMessage(CommandType commandType, Socket socket) throws Exception{
         KVMessage message = new KVMessage(commandType)
-				            .setClientType(ClientType.ECS);  
-		KVMessageUtils.sendMessage(message, socket.getOutputStream());
-	    KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
-	    System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+                            .setClientType(ClientType.ECS);  
+        KVMessageUtils.sendMessage(message, socket.getOutputStream());
+        KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
+        System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
     }
 
     public void sendMessage(CommandType commandType, Socket socket) throws Exception{
         KVMessage message = new KVMessage(commandType)
-				            .setClientType(ClientType.ECS);  
-		KVMessageUtils.sendMessage(message, socket.getOutputStream());
+                            .setClientType(ClientType.ECS);  
+        KVMessageUtils.sendMessage(message, socket.getOutputStream());
     }
 
 
@@ -290,7 +310,7 @@ public class ECSClient {
         }
     }
 
-	public boolean shutDown(){
+    public boolean shutDown(){
         try {
             for (Map.Entry<String, Socket> entry: kvServerSockets.entrySet()) {
                 Socket socket = entry.getValue();
@@ -300,112 +320,112 @@ public class ECSClient {
             }
         } catch (Exception e) {
             System.out.println("Could not shut down all servers");
-		return false;
+        return false;
         }
-		return true;
-	}
+        return true;
+    }
 
-	public boolean addToHashRing(String arg1, String arg2){
-		ECSNode node = availableMachines.pollFirst();
-		hashRing.add(node);
-		Socket kvServerSocket = null;
-		try {
-			int portNumber = 0;
-			kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
-		} catch (IOException ioe) {
-			ioe.printStackTrace();	
-		}
-		kvServerSockets.put(node.getHashedValue(), kvServerSocket);
-		totalNumberOfMachines++;
-		return true;
-	}
-	
-	public boolean addToAvailableMachines(String arg1, String arg2){
-		ECSNode node = new ECSNode(arg1,arg2);
-		availableMachines.add(node);
-		totalNumberOfMachines++;
-		return true;
-	}
+    public boolean addToHashRing(String arg1, String arg2){
+        ECSNode node = availableMachines.pollFirst();
+        hashRing.add(node);
+        Socket kvServerSocket = null;
+        try {
+            int portNumber = 0;
+            kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
+        } catch (IOException ioe) {
+            ioe.printStackTrace();  
+        }
+        kvServerSockets.put(node.getHashedValue(), kvServerSocket);
+        totalNumberOfMachines++;
+        return true;
+    }
+    
+    public boolean addToAvailableMachines(String arg1, String arg2){
+        ECSNode node = new ECSNode(arg1,arg2);
+        availableMachines.add(node);
+        totalNumberOfMachines++;
+        return true;
+    }
 
-	public int getTotalNumberOfMachines(){
-		return totalNumberOfMachines;
-	}
+    public int getTotalNumberOfMachines(){
+        return totalNumberOfMachines;
+    }
 
     public TreeSet<ECSNode> getAvailableMachines() {
         return availableMachines;
     }
-	
-	public TreeSet<ECSNode> getHashRing(){
-		return hashRing;
-	}
+    
+    public TreeSet<ECSNode> getHashRing(){
+        return hashRing;
+    }
  
-	public int getHashRingSize(){
-		return hashRing.size();	
-	}
+    public int getHashRingSize(){
+        return hashRing.size(); 
+    }
 
-	public int getAvailableMachinesSize(){
-		return availableMachines.size(); 
-	}
+    public int getAvailableMachinesSize(){
+        return availableMachines.size(); 
+    }
 
-	public void runConfig(String fileName){
-		try{
-			File file = new File (fileName);
-			FileReader fileReader = new FileReader(file);
-			BufferedReader bufferedReader = new BufferedReader(fileReader);
-			StringBuffer stringBuffer = new StringBuffer();
+    public void runConfig(String fileName){
+        try{
+            File file = new File (fileName);
+            FileReader fileReader = new FileReader(file);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            StringBuffer stringBuffer = new StringBuffer();
 
-			String line;
-			while((line = bufferedReader.readLine()) != null){
-				String[] splited = line.split(" ");
-				if (splited.length == 2) {
-					addToAvailableMachines(splited[0], splited[1]);
-				}
-			}
-			fileReader.close();
-		} catch (IOException e){
-			e.printStackTrace();		
-		}	
-	}
+            String line;
+            while((line = bufferedReader.readLine()) != null){
+                String[] splited = line.split(" ");
+                if (splited.length == 2) {
+                    addToAvailableMachines(splited[0], splited[1]);
+                }
+            }
+            fileReader.close();
+        } catch (IOException e){
+            e.printStackTrace();        
+        }   
+    }
 
-	/*public static void main(String[] args){
-		ECSClient client = new ECSClient();
-		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e) {
-			System.out.println(e);
-		}
-		String fileName = "test.config";
-		try{
-			File file = new File (fileName);
-			FileReader fileReader = new FileReader(file);
-			BufferedReader bufferedReader = new BufferedReader(fileReader);
-			StringBuffer stringBuffer = new StringBuffer();
-		
-			String line;
-			while((line = bufferedReader.readLine()) != null){
-				String[] splited = line.split(" ");
-				if(splited.length < 2){
-					System.out.println("screwed up somewhere in the read file");				
-				}
-				else{
-					client.addToAvailableMachines(splited[0], splited[1]);
-				}
-			}
-			fileReader.close();
-		} catch (IOException e){
-			e.printStackTrace();		
-		}
-		
-		client.initService(5, 1, "none");
-		client.start();
-		client.stop();
-		//populate here lois
-		
-		
-		return;			
-	}*/
-	
+    /*public static void main(String[] args){
+        ECSClient client = new ECSClient();
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            System.out.println(e);
+        }
+        String fileName = "test.config";
+        try{
+            File file = new File (fileName);
+            FileReader fileReader = new FileReader(file);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            StringBuffer stringBuffer = new StringBuffer();
+        
+            String line;
+            while((line = bufferedReader.readLine()) != null){
+                String[] splited = line.split(" ");
+                if(splited.length < 2){
+                    System.out.println("screwed up somewhere in the read file");                
+                }
+                else{
+                    client.addToAvailableMachines(splited[0], splited[1]);
+                }
+            }
+            fileReader.close();
+        } catch (IOException e){
+            e.printStackTrace();        
+        }
+        
+        client.initService(5, 1, "none");
+        client.start();
+        client.stop();
+        //populate here lois
+        
+        
+        return;         
+    }*/
+    
 
-	
-	
+    
+    
 }
