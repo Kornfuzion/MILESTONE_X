@@ -147,7 +147,7 @@ public class ECSClient {
             return false;
         }
         try {
-			String script = "script.sh";
+			String script = "./script.sh";
 			Process p = Runtime.getRuntime().exec("hostname -f");
 			p.waitFor();
 			BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -209,7 +209,7 @@ public class ECSClient {
 	public void initKVService(int numberOfNodes, int cacheSize, String replacementStrategy, String configFile){
 		runConfig(configFile);
 		try {
-			String script = "script.sh";
+			String script = "./script.sh";
 			Process p = Runtime.getRuntime().exec("hostname -f");
 			p.waitFor();
 			BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
