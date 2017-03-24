@@ -25,7 +25,8 @@ public enum CommandType {
     UNLOCK_WRITE("UNLOCK_WRITE"),
     MOVE_DATA("MOVE_DATA"),
     UPDATE_METADATA("UPDATE_METADATA"),
-    LOCK_WRITE_UPDATE_METADATA("LOCK_WRITE_UPDATE_METADATA");
+    LOCK_WRITE_UPDATE_METADATA("LOCK_WRITE_UPDATE_METADATA"),
+    HEARTBEAT("HEARTBEAT");
 
     private final String command;
     CommandType(String command) {

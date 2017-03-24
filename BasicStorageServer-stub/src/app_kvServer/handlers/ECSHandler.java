@@ -80,6 +80,8 @@ public class ECSHandler implements MessageHandler {
 			case LOCK_WRITE_UPDATE_METADATA:
 				server.blockStorageRerouteReads(message.getMetadata());
 				break;
+            default:
+                break;                
         }
 
         // For now, assume no failures possible so just return a generic success

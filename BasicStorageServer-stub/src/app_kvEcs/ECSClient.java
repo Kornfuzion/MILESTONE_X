@@ -28,6 +28,34 @@ public class ECSClient {
     private Process proc;
     public static String ROOT_HOST_ADDRESS = "127.0.0.1";
 
+    class Heartbeater implements Runnable {
+
+        ECSClient client;
+        ECSNode server;
+        Socket connection;
+        static final int heartbeatInterval = 5000;
+
+        public Heartbeater(ECSClient client, ECSNode server) {
+            this.client = client;
+            this.server = server;
+            this.connection = client.getServerSocket(this.server.getHashedValue());
+        }
+
+        public void run() {
+            // send heartbeats every X seconds
+            while (true) {
+                try {
+                    client.sendReceiveMessage(CommandType.HEARTBEAT, this.connection);
+                    Thread.sleep(this.heartbeatInterval);
+                } catch (Exception e) {
+                    break;
+                }
+            }
+            // handle failure
+            client.handleFailure(this.server);
+        }
+    }
+
     // Holds the communication socket to every KVServer
     private Map<String, Socket> kvServerSockets;
 
@@ -80,6 +108,11 @@ public class ECSClient {
             // Wait for ack message from kvServer.
         }
         return true;
+    }
+
+    public void handleFailure(ECSNode deadServer) {
+        // TODO: VICTOR KO SMD BISH
+        System.out.println("HANDLING FAILURE FOR DEAD SERVER "+ deadServer.getPort());
     }
 
     public boolean removeNode(int serverIndex) {
@@ -181,7 +214,6 @@ public class ECSClient {
             Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
             kvServerSockets.put(node.getHashedValue(), kvServerSocket); 
             CachePolicy cachePolicy = CachePolicy.parseString(cachePolicyString);
-            setMetadata(CommandType.INIT, hashRing, cacheSize, cachePolicy, kvServerSocket);
     
             hashRing.add(node);
 
@@ -190,6 +222,10 @@ public class ECSClient {
             
             // INIT NEW SERVER
             setMetadata(CommandType.INIT, hashRing, cacheSize, cachePolicy, kvServerSocket);
+
+            // Start up a heartbeater for this server, if it dies,
+            // the thread will execute the appropriate failure handling on callback
+            new Thread(new Heartbeater(this, node)).start();
 
             // Start the new server
             sendReceiveMessage(CommandType.START, kvServerSocket);
@@ -254,6 +290,10 @@ public class ECSClient {
                                 cacheSize, 
                                 CachePolicy.parseString(replacementStrategy), 
                         kvServerSocket);
+
+                    // Start up a heartbeater for this server, if it dies,
+                    // the thread will execute the appropriate failure handling on callback
+                    new Thread(new Heartbeater(this, node)).start();
                 } catch (Exception ge) {
                     System.out.println("Unable to send metadata to server at port " 
                                         + node.getPort() + ". It is most likely being used.");
@@ -287,7 +327,7 @@ public class ECSClient {
         System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
     }
 
-    public void sendReceiveMessage(CommandType commandType, Socket socket) throws Exception{
+    public void sendReceiveMessage(CommandType commandType, Socket socket) throws Exception {
         KVMessage message = new KVMessage(commandType)
                             .setClientType(ClientType.ECS);  
         KVMessageUtils.sendMessage(message, socket.getOutputStream());
@@ -366,6 +406,10 @@ public class ECSClient {
 
     public int getAvailableMachinesSize(){
         return availableMachines.size(); 
+    }
+
+    public Socket getServerSocket(String hash) {
+        return kvServerSockets.get(hash);
     }
 
     public void runConfig(String fileName){
