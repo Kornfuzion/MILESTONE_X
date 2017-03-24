@@ -9,25 +9,37 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 public class MetadataUtils {
+    public static ECSNode getReadSuccessor(String hash, TreeSet<ECSNode> hashRing) {
+        ArrayList<ECSNode> triplet = new ArrayList<ECSNode>();
+        ECSNode coordinator = getSuccessor(hash, hashRing, true);
+        triplet.add(coordinator);
+
+        // Grab the next two higher nodes
+        for (int i = 0; i < 2; i++) {
+            ECSNode replica = hashRing.higher(coordinator);
+            if (replica == null) {
+                replica = hashRing.first();
+            }
+            triplet.add(replica);
+            coordinator = replica;
+        }
+
+        // Randomly return one of the three replicas found
+        int randomIndex = (new Random()).nextInt(3);
+        System.out.println("FOUND RANDOM INDEX" + randomIndex);
+        return triplet.get(randomIndex);
+    }
+
     public static ECSNode getSuccessor(String hash, TreeSet<ECSNode> hashRing) {
         return getSuccessor(hash, hashRing, true);
     }
 
     public static ECSNode getSuccessor(String hash, TreeSet<ECSNode> hashRing, boolean lessThanEqualSuccessor) {
         if (hashRing == null) return null;
-	ECSNode successor = null;
-        ECSNode first = null;
-        for (ECSNode node : hashRing) {
-            if (first == null) {
-                first = node;
-            }
-            if (successor == null) {
-                if (lessThanEqualSuccessor && hash.compareTo(node.getHashedValue()) <= 0 ||
-                    !lessThanEqualSuccessor && hash.compareTo(node.getHashedValue()) < 0) {
-                    successor = node;
-                }
-            }
-        }
+        ECSNode tempElement = new ECSNode(null, null);
+        tempElement.setHashedValue(hash);                                
+        ECSNode successor = lessThanEqualSuccessor ? hashRing.ceiling(tempElement) : hashRing.higher(tempElement);
+        ECSNode first = hashRing.first();
         return successor == null ? first : successor;
     }
 

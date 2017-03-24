@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import app_kvEcs.*;
 import cache.*;
 import common.*;
+import common.messages.*;
 import datastore.*;
 import logger.*;
 
@@ -181,8 +182,18 @@ public class KVServer extends Thread {
         return MetadataUtils.copyMetadata(this.metadata);
     }
 
-    public boolean isSuccessor(ECSNode successor) {
-        return (successor == null) || (this.port == Integer.parseInt(successor.getPort()));
+    public boolean isSuccessor(ECSNode successor, CommandType command) {
+        boolean isSuccessorNull = (successor == null);
+        boolean isSuccessor = false;
+        int replicaCount = (command == CommandType.GET) ? 3 : 1;
+        for (int i = 0; i < replicaCount; i++) {
+            isSuccessor |= (this.port == Integer.parseInt(successor.getPort()));
+            successor = this.metadata.higher(successor);
+            if (successor == null) {
+                successor = this.metadata.first();
+            }
+        }
+        return isSuccessorNull || isSuccessor;
     }
 
     /**

@@ -70,7 +70,7 @@ public class ClientHandler implements MessageHandler {
         ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(message.getKey()), server.getMetadata());
         TreeSet<ECSNode> metadata = null;
 
-        boolean reroute = !server.isSuccessor(successor) || !server.alive();
+        boolean reroute = !server.isSuccessor(successor, message.getCommand()) || !server.alive();
 		serverStatus.metadataReadUnlock();
 
         if (reroute) {

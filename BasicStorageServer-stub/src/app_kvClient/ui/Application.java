@@ -117,7 +117,7 @@ public class Application implements ClientSocketListener {
             if(tokens.length >= 2) {
                 String key = tokens[1];
                 if (checkKey(key)) { 
-                    connectToAppropriateServer(key);
+                    connectToAppropriateServer(key, CommandType.GET);
                     client.get(key);
                 }
                 else {
@@ -133,7 +133,7 @@ public class Application implements ClientSocketListener {
                 // grab the rest of the commmandline args as a solid chunk for the value
                 String value = (cmdLine.substring(cmdLine.indexOf(key) + key.length())).trim();
                 if (checkKey(key) && checkValue(value)) {
-                   connectToAppropriateServer(key);
+                   connectToAppropriateServer(key, CommandType.PUT);
                    client.put(key, value);
                 } 
                 else {
@@ -142,7 +142,7 @@ public class Application implements ClientSocketListener {
             } else if(tokens.length >= 2) {
                 String key = tokens[1];
                 if (checkKey(key)) {
-                    connectToAppropriateServer(key);
+                    connectToAppropriateServer(key, CommandType.DELETE);
                     client.delete(key);
                 }
                 else {
@@ -154,7 +154,7 @@ public class Application implements ClientSocketListener {
         } else  if (tokens[0].equals("delete")) {
             if(tokens.length >= 2) {
                 String key = tokens[1];
-                connectToAppropriateServer(key);
+                connectToAppropriateServer(key, CommandType.DELETE);
                 client.delete(key);
             } else {
                 printError("No message passed!");
@@ -185,7 +185,7 @@ public class Application implements ClientSocketListener {
     }
     
 	public KVMessage get(String key) throws Exception {
-        connectToAppropriateServer(key);
+        connectToAppropriateServer(key, CommandType.GET);
         client.get(key);
 		KVMessage reply = client.getLatestMessage();
 		handleNewMessage(reply);
@@ -193,7 +193,7 @@ public class Application implements ClientSocketListener {
 	}
 
 	public KVMessage put(String key, String value) throws Exception {
-        connectToAppropriateServer(key);
+        connectToAppropriateServer(key, CommandType.PUT);
         client.put(key, value);
 		KVMessage reply = client.getLatestMessage();
 		handleNewMessage(reply);
@@ -233,9 +233,14 @@ public class Application implements ClientSocketListener {
         }
     }
     
-    private ECSNode getServerForKey(String key) {
+    private ECSNode getServerForKey(String key, CommandType command) {
         try {
-            return MetadataUtils.getSuccessor(MetadataUtils.hash(key), metadata);
+            switch (command) {
+                case GET:
+                    return MetadataUtils.getReadSuccessor(MetadataUtils.hash(key), metadata);
+                default:
+                    return MetadataUtils.getSuccessor(MetadataUtils.hash(key), metadata);       
+            }
         } catch (Exception e) {
             //for some reason we couldn't...?
             e.printStackTrace();
@@ -243,9 +248,9 @@ public class Application implements ClientSocketListener {
         }
     }
 
-    private void connectToAppropriateServer(String key) {
+    private void connectToAppropriateServer(String key, CommandType command) {
         if(client == null || !client.isRunning()){
-            ECSNode server = getServerForKey(key);
+            ECSNode server = getServerForKey(key, command);
             if (server != null) {
                 try {
                     System.out.println("FOUND SERVER PORT=" + server.getPort() + " IP = "+server.getIP());
@@ -363,7 +368,7 @@ public class Application implements ClientSocketListener {
                     // Try again if we failed our request due to stale metadata
                     if (message.getStatus() == StatusType.REROUTE) {
                         String key = message.getKey();
-                        connectToAppropriateServer(key);
+                        connectToAppropriateServer(key, message.getCommand());
 
                         switch (message.getCommand()) {
                             case GET:

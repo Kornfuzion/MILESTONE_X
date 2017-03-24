@@ -20,7 +20,7 @@ public class ECSNode {
 		    e.printStackTrace();
 		}
 	}
-	
+
 	public String getPort(){
 		return port;
 	}
@@ -28,6 +28,10 @@ public class ECSNode {
 	public String getIP(){
 		return IP;
 	}
+
+    public void setHashedValue(String hashedValue) {
+        this.hashedValue = hashedValue;
+    }
 
 	public String getHashedValue(){
 		return hashedValue;
