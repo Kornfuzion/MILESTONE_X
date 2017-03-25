@@ -52,6 +52,8 @@ public class ECSClient {
                 }
             }
             // handle failure
+
+			this.server.setNodeDead();
             client.removeHeartbeatSocket(server.getHashedValue());
             client.handleFailure(this.server);
         }
@@ -116,6 +118,19 @@ public class ECSClient {
     public void handleFailure(ECSNode deadServer) {
         // TODO: VICTOR KO SMD BISH
         System.out.println("HANDLING FAILURE FOR DEAD SERVER "+ deadServer.getPort());
+		//remove from active ring
+		int ind = 0;		
+		for(ECSNode node : hashRing){
+			if(node.getPort() == deadServer.getPort()){
+				break;			
+			}
+			ind++;		
+		}
+		//found index of dead server, call remove Node
+		removeNode(ind);
+		addNode(500, "lru");
+		
+		
     }
 
     public boolean removeNode(int serverIndex) {
@@ -144,16 +159,20 @@ public class ECSClient {
             
 			// Removing the last node (no successor).
 			if (successor == null) {
-				sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
-            	sendReceiveMessage(CommandType.STOP, removeSocket);
-            	sendMessage(CommandType.SHUT_DOWN, removeSocket);
+				if(removeNode.getLiveness() == true){
+					sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
+            		sendReceiveMessage(CommandType.STOP, removeSocket);
+            		sendMessage(CommandType.SHUT_DOWN, removeSocket);
+				}
 				return true;
 			}        
 
             Socket successorSocket = kvServerSockets.get(successor.getHashedValue());                  
             
             // Lock the node to be removed.
-            sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
+			if(removeNode.getLiveness() == true){
+            	sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
+			}
 
             // Lock the successor.
             sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
@@ -162,11 +181,15 @@ public class ECSClient {
             setMetadata(CommandType.UPDATE_METADATA, hashRing, 0, CachePolicy.FIFO, successorSocket);
 
             // Notify the node that it should stop receiving any connections, including reads.
-            sendReceiveMessage(CommandType.STOP, removeSocket);
+			if(removeNode.getLiveness() == true){
+            	sendReceiveMessage(CommandType.STOP, removeSocket);
+			}
             
             // Shutdown the node to be removed (no need to worry about releasing the write lock)
             // Don't need to wait for a respnse.
-            sendMessage(CommandType.SHUT_DOWN, removeSocket);
+			if(removeNode.getLiveness() == true){
+            	sendMessage(CommandType.SHUT_DOWN, removeSocket);
+			}
 
             // Unlock the successor
             sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
@@ -175,7 +198,8 @@ public class ECSClient {
             updateAllMetadata();
 
             // Add node back to available machines.
-            availableMachines.add(removeNode); 
+			removeNode.setNodeAlive();
+            availableMachines.add(removeNode);
             // Remove node's socket.
             kvServerSockets.remove(removeNode.getHashedValue());
         return true;
