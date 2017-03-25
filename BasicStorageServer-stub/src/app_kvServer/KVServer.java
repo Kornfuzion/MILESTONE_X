@@ -182,18 +182,26 @@ public class KVServer extends Thread {
         return MetadataUtils.copyMetadata(this.metadata);
     }
 
-    public boolean isSuccessor(ECSNode successor, CommandType command) {
-        boolean isSuccessorNull = (successor == null);
-        boolean isSuccessor = false;
+    // Return:
+    // 0 - not successor
+    // 1 - coordinator
+    // 2 - replica 1
+    // 3 - replica 2
+    public int isSuccessor(ECSNode successor, CommandType command) {
+        if (successor == null) return 1;
+        int successorIndex = -1;
         int replicaCount = (command == CommandType.GET) ? 3 : 1;
         for (int i = 0; i < replicaCount; i++) {
-            isSuccessor |= (this.port == Integer.parseInt(successor.getPort()));
+            if (this.port == Integer.parseInt(successor.getPort())) {
+                successorIndex = i;
+                break;
+            }
             successor = this.metadata.higher(successor);
             if (successor == null) {
                 successor = this.metadata.first();
             }
         }
-        return isSuccessorNull || isSuccessor;
+        return successorIndex + 1;
     }
 
     /**
