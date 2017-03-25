@@ -53,9 +53,10 @@ public class StorageManager {
     /**
     * Retrieves a value for a specified key if the key exists.
     * @param key The key associated with the desired value.
+    * @param serverIdentifer The idenfifier associated with the server.
     * @return The value associated with the key. Returns null if key does not exist or an error occurs. 
     */ 
-    public KVMessage get(String key, int version) {
+    public KVMessage get(String key, int version, String serverIdentifier) {
         serverStatus.readReadLock();
         if (serverStatus.stopServer()) {
             serverStatus.readReadUnlock();
@@ -70,13 +71,11 @@ public class StorageManager {
                 TreeSet<ECSNode> metadata = serverStatus.getMetadata();
                 serverStatus.metadataReadUnlock();
                 serverStatus.readReadUnlock();
-                // TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
                 return new KVMessage(CommandType.GET).setStatus(StatusType.REROUTE).setMetadata(metadata);
             }
         } catch (Exception e) {
             serverStatus.metadataReadUnlock();
             serverStatus.readReadUnlock();
-            // TODO(LOUIS): NEED TO RETURN SOME STATUS TYPE HERE
             return new KVMessage(CommandType.GET).setStatus(StatusType.ERROR);
         }
         serverStatus.metadataReadUnlock();  
@@ -84,7 +83,7 @@ public class StorageManager {
 
         logger.info("Server GET with Key: " + key);
         serverStatus.readReadUnlock();
-        String value = storage.get(key);
+        String value = storage.get(key, serverIdentifier);
         if (value == null) {
             return new KVMessage(CommandType.GET).setStatus(StatusType.GET_ERROR);  
         }
@@ -95,9 +94,10 @@ public class StorageManager {
     * Inserts a key-value pair.
     * @param key The key belonging to the key-value pair.
     * @param value The value belonging to the key-value pair.
+    * @param serverIdentifer The idenfifier associated with the server.
     * @return A {@link StatusType} indicating the status of the insert opertation.
     */
-    public StatusType set(String key, String value, int version){
+    public StatusType set(String key, String value, int version, String serverIdentifier){
         serverStatus.versionReadLock();
         if (version != serverStatus.getVersion()) {
             serverStatus.versionReadUnlock();
@@ -111,7 +111,7 @@ public class StorageManager {
 
         logger.info("Server SET with Key: " + key + " Value: " + value);
 
-        StatusType status = storage.put(key, value);
+        StatusType status = storage.put(key, value, serverIdentifier);
         serverStatus.versionReadUnlock();
         return status;
     }
@@ -119,9 +119,10 @@ public class StorageManager {
     /**
     * Deletes a key-value pair.
     * @param key The key belonging to the key-value pair.
+    * @param serverIdentifer The idenfifier associated with the server.
     * @return A {@link StatusType} indicating the status of the delete operation.
     */
-    public StatusType delete(String key, int version) {
+    public StatusType delete(String key, int version, String serverIdentifier) {
         serverStatus.versionReadLock();
         if (version != serverStatus.getVersion()) {
             serverStatus.versionReadUnlock();
@@ -135,7 +136,7 @@ public class StorageManager {
     
         logger.info("Server DELETE with Key: " + key);
 
-        StatusType status = storage.delete(key);
+        StatusType status = storage.delete(key, serverIdentifier);
         serverStatus.versionReadUnlock();
         return status;
     }

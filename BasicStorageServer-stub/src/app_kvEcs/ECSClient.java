@@ -38,33 +38,37 @@ public class ECSClient {
         public Heartbeater(ECSClient client, ECSNode server) {
             this.client = client;
             this.server = server;
-            this.connection = client.getServerSocket(this.server.getHashedValue());
+            this.connection = client.getHeartbeatSocket(this.server.getHashedValue());
         }
 
         public void run() {
             // send heartbeats every X seconds
             while (true) {
                 try {
-                    client.sendReceiveMessage(CommandType.HEARTBEAT, this.connection);
+                    client.sendReceiveMessage(CommandType.HEARTBEAT, this.connection, false);
                     Thread.sleep(this.heartbeatInterval);
                 } catch (Exception e) {
                     break;
                 }
             }
             // handle failure
+
 			this.server.setNodeDead();
+            client.removeHeartbeatSocket(server.getHashedValue());
             client.handleFailure(this.server);
         }
     }
 
-    // Holds the communication socket to every KVServer
+    // Holds the communication socket to every KVServer for ECS commands
     private Map<String, Socket> kvServerSockets;
+    private Map<String, Socket> heartbeatSockets;
 
     public ECSClient(){
         this.comparator = new hashRingComparator();         
         this.hashRing = new TreeSet<ECSNode>(comparator);
         this.availableMachines = new TreeSet<ECSNode>(comparator);
         this.kvServerSockets = new LinkedHashMap<String, Socket>();
+        this.heartbeatSockets = new LinkedHashMap<String, Socket>();
         totalNumberOfMachines = 0;
     }
     
@@ -235,7 +239,9 @@ public class ECSClient {
             }
 
             Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
+            Socket heartbeatSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
             kvServerSockets.put(node.getHashedValue(), kvServerSocket); 
+            heartbeatSockets.put(node.getHashedValue(), kvServerSocket); 
             CachePolicy cachePolicy = CachePolicy.parseString(cachePolicyString);
     
             hashRing.add(node);
@@ -245,10 +251,6 @@ public class ECSClient {
             
             // INIT NEW SERVER
             setMetadata(CommandType.INIT, hashRing, cacheSize, cachePolicy, kvServerSocket);
-
-            // Start up a heartbeater for this server, if it dies,
-            // the thread will execute the appropriate failure handling on callback
-            new Thread(new Heartbeater(this, node)).start();
 
             // Start the new server
             sendReceiveMessage(CommandType.START, kvServerSocket);
@@ -267,6 +269,10 @@ public class ECSClient {
 
             // Unlock successor
             sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+
+            // Start up a heartbeater for this server. If it dies,
+            // the thread will execute the appropriate failure handling on callback
+            new Thread(new Heartbeater(this, node)).start();
         return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -305,7 +311,9 @@ public class ECSClient {
             // Connecting and initializing the KVServers
             for (ECSNode node : hashRing) {
                 Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
+                Socket heartbeatSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
                 kvServerSockets.put(node.getHashedValue(), kvServerSocket);
+                heartbeatSockets.put(node.getHashedValue(), heartbeatSocket);
                 
                 try{
                     setMetadata(CommandType.INIT, 
@@ -350,12 +358,19 @@ public class ECSClient {
         System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
     }
 
-    public void sendReceiveMessage(CommandType commandType, Socket socket) throws Exception {
+    public void sendReceiveMessage(CommandType commandType, Socket socket, boolean printResponse) throws Exception {
         KVMessage message = new KVMessage(commandType)
                             .setClientType(ClientType.ECS);  
         KVMessageUtils.sendMessage(message, socket.getOutputStream());
         KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
-        System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+        
+        if (printResponse) {
+            System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+        }
+    }
+
+    public void sendReceiveMessage(CommandType commandType, Socket socket) throws Exception {
+        sendReceiveMessage(commandType, socket, true);
     }
 
     public void sendMessage(CommandType commandType, Socket socket) throws Exception{
@@ -389,6 +404,7 @@ public class ECSClient {
         return true;
     }
 
+    // Err...we never use this function. Remove it or what?
     public boolean addToHashRing(String arg1, String arg2){
         ECSNode node = availableMachines.pollFirst();
         hashRing.add(node);
@@ -433,6 +449,14 @@ public class ECSClient {
 
     public Socket getServerSocket(String hash) {
         return kvServerSockets.get(hash);
+    }
+
+    public Socket getHeartbeatSocket(String hash) {
+        return heartbeatSockets.get(hash);
+    }
+
+    public void removeHeartbeatSocket(String hash) {
+        heartbeatSockets.remove(hash);
     }
 
     public void runConfig(String fileName){

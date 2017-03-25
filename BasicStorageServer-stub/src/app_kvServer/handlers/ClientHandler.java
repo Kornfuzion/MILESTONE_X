@@ -83,11 +83,14 @@ public class ClientHandler implements MessageHandler {
 		// TODO: NEED TO RETURN HERE FOR A REROUTE IMMEDIATELY
         }
 
+        // TODO(James): Change the serverIdentifier based off whether the server is the coordinator,
+        //              the first replica, or the second replica.
+        String serverIdentifier = "";
         switch (message.getCommand()) {
             case GET:
                 String getValue = "";
                 if (!reroute){
-                    response = storageManager.get(message.getKey(), version);
+                    response = storageManager.get(message.getKey(), version, serverIdentifier);
                     
                     logger.info("RECEIVED GET REQUEST");
                     if (getValue != null && getValue.length() > 0) {
@@ -109,7 +112,7 @@ public class ClientHandler implements MessageHandler {
             case PUT:
                 if (!reroute) {
                     logger.info("RECEIVED PUT REQUEST");
-                    responseStatus = storageManager.set(message.getKey(), message.getValue(), version);
+                    responseStatus = storageManager.set(message.getKey(), message.getValue(), version, serverIdentifier);
                 }
                 response
                     .setKey(message.getKey())
@@ -122,7 +125,7 @@ public class ClientHandler implements MessageHandler {
             case DELETE:
                 if (!reroute) {
                     logger.info("RECEIVED DELETE REQUEST");
-                    responseStatus = storageManager.delete(message.getKey(), version); 
+                    responseStatus = storageManager.delete(message.getKey(), version, serverIdentifier); 
                 }
                 response
                     .setKey(message.getKey())
