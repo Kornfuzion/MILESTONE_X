@@ -106,23 +106,13 @@ public class ClientHandler implements MessageHandler {
 
         switch (message.getCommand()) {
             case GET:
-                String getValue = "";
                 if (!reroute){
                     response = storageManager.get(message.getKey(), version, formatServerIdentifier(serverIdentifier));
                     
                     logger.info("RECEIVED GET REQUEST");
-                    if (getValue != null && getValue.length() > 0) {
-                        // GET SUCCESS
-                        responseStatus = StatusType.GET_SUCCESS;
-                    }
-                    else {
-                        // GET FAIL
-                        responseStatus = StatusType.GET_ERROR;
-                    }
                 }
                 response
                     .setKey(message.getKey())
-                    .setStatus(responseStatus)
                     .setMetadata(metadata)
                     .setMessage(reply);
                 break;
