@@ -72,7 +72,8 @@ public class KVServer extends Thread {
         this.port = port;
         this.cacheSize = cacheSize;
         this.policy = CachePolicy.parseString(policy);
-	    this.running = true;
+	this.metadata = metadata;
+        this.running = true;
         this.status = new KVServerStatus(port, metadata);
         String storagePath = System.getProperty("user.dir") + File.separator + "storage";
         try {
@@ -330,7 +331,14 @@ public class KVServer extends Thread {
                 System.out.println("Usage: Server <port>!");
             } else {
                 int port = Integer.parseInt(args[0]);
-                //new KVServer(port, 256, "FIFO").start();
+                /*
+                UNCOMMENT THESE LINES IF YOU WANT TO TEST WITH LEGACY CONSTRUCTOR.
+                ECSNode node = new ECSNode("8123", "127.0.0.1");
+                Comparator<ECSNode> comparator = new hashRingComparator();
+                TreeSet<ECSNode> metadata = new TreeSet<ECSNode>(comparator);
+                metadata.add(node);
+                new KVServer(port, 256, "FIFO", metadata).start();
+                */
                 new KVServer(port).start();
             }
         } catch (IOException e) {
