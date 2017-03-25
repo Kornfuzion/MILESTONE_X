@@ -10,10 +10,12 @@ public class ECSNode {
 	private String port;
 	private String IP;
 	private String hashedValue;
+	boolean alive;
 	
 	public ECSNode(String port, String IP){
 		this.port = port;
 		this.IP = IP;
+		this.alive = true;
 		try{
             this.hashedValue = MetadataUtils.hash(port + IP);
 		} catch (Exception e){
@@ -37,4 +39,15 @@ public class ECSNode {
 		return hashedValue;
 	}
 
+	public void setNodeDead(){
+		this.alive = false;
+	}
+
+	public void setNodeAlive(){
+		this.alive = true;	
+	}
+
+	public boolean getLiveness(){
+		return this.alive;	
+	}
 }
