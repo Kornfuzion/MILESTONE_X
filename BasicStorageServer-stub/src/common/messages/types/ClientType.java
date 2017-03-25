@@ -13,6 +13,7 @@ public enum ClientType {
     // Invalid if not a client - e.g. message originates from server
     INVALID ("INVALID"),
     CLIENT ("CLIENT"), 
+    COORDINATOR ("COORDINATOR"),
     ECS ("ECS");
 
     private final String client;

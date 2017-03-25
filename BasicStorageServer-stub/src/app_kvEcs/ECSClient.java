@@ -45,7 +45,7 @@ public class ECSClient {
             // send heartbeats every X seconds
             while (true) {
                 try {
-                    client.sendReceiveMessage(CommandType.HEARTBEAT, this.connection, false);
+                    KVMessageUtils.sendReceiveMessage(CommandType.HEARTBEAT, this.connection, false);
                     Thread.sleep(this.heartbeatInterval);
                 } catch (Exception e) {
                     break;
@@ -83,7 +83,7 @@ public class ECSClient {
                 return false;           
             }
             try {
-                sendReceiveMessage(CommandType.START, socket);
+                KVMessageUtils.sendReceiveMessage(CommandType.START, socket);
             } catch (Exception e) {
                 e.printStackTrace();
                 return false;
@@ -105,7 +105,7 @@ public class ECSClient {
             }
             try {
                 // Send start message to kvServer.
-                sendReceiveMessage(CommandType.STOP, socket);
+                KVMessageUtils.sendReceiveMessage(CommandType.STOP, socket);
             } catch (Exception e) {
                 e.printStackTrace();
                 return false;
@@ -160,8 +160,8 @@ public class ECSClient {
 			// Removing the last node (no successor).
 			if (successor == null) {
 				if(removeNode.getLiveness() == true){
-					sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
-            		sendReceiveMessage(CommandType.STOP, removeSocket);
+					KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
+            		KVMessageUtils.sendReceiveMessage(CommandType.STOP, removeSocket);
             		sendMessage(CommandType.SHUT_DOWN, removeSocket);
 				}
 				return true;
@@ -171,18 +171,18 @@ public class ECSClient {
             
             // Lock the node to be removed.
 			if(removeNode.getLiveness() == true){
-            	sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
+            	KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
 			}
 
             // Lock the successor.
-            sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
+            KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
 
             // Send metadata update to successor.
             setMetadata(CommandType.UPDATE_METADATA, hashRing, 0, CachePolicy.FIFO, successorSocket);
 
             // Notify the node that it should stop receiving any connections, including reads.
 			if(removeNode.getLiveness() == true){
-            	sendReceiveMessage(CommandType.STOP, removeSocket);
+            	KVMessageUtils.sendReceiveMessage(CommandType.STOP, removeSocket);
 			}
             
             // Shutdown the node to be removed (no need to worry about releasing the write lock)
@@ -192,7 +192,7 @@ public class ECSClient {
 			}
 
             // Unlock the successor
-            sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+            KVMessageUtils.sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
 
             // Update all server metadata.
             updateAllMetadata();
@@ -253,22 +253,22 @@ public class ECSClient {
             setMetadata(CommandType.INIT, hashRing, cacheSize, cachePolicy, kvServerSocket);
 
             // Start the new server
-            sendReceiveMessage(CommandType.START, kvServerSocket);
+            KVMessageUtils.sendReceiveMessage(CommandType.START, kvServerSocket);
 
             // Lock successor
-            sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
+            KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
 
             // Move data
-            sendReceiveMessage(CommandType.MOVE_DATA, successorSocket);
+            KVMessageUtils.sendReceiveMessage(CommandType.MOVE_DATA, successorSocket);
 
             // Update successor's metadata while under write lock
-            sendReceiveMessage(CommandType.LOCK_WRITE_UPDATE_METADATA, successorSocket);
+            KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE_UPDATE_METADATA, successorSocket);
 
             // Update all server metadata
             updateAllMetadata();
 
             // Unlock successor
-            sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+            KVMessageUtils.sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
 
             // Start up a heartbeater for this server. If it dies,
             // the thread will execute the appropriate failure handling on callback
@@ -358,28 +358,6 @@ public class ECSClient {
         System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
     }
 
-    public void sendReceiveMessage(CommandType commandType, Socket socket, boolean printResponse) throws Exception {
-        KVMessage message = new KVMessage(commandType)
-                            .setClientType(ClientType.ECS);  
-        KVMessageUtils.sendMessage(message, socket.getOutputStream());
-        KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
-        
-        if (printResponse) {
-            System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
-        }
-    }
-
-    public void sendReceiveMessage(CommandType commandType, Socket socket) throws Exception {
-        sendReceiveMessage(commandType, socket, true);
-    }
-
-    public void sendMessage(CommandType commandType, Socket socket) throws Exception{
-        KVMessage message = new KVMessage(commandType)
-                            .setClientType(ClientType.ECS);  
-        KVMessageUtils.sendMessage(message, socket.getOutputStream());
-    }
-
-
     public void updateAllMetadata() throws Exception {
         // Update metadata of all other servers
         for (ECSNode serverNode : hashRing) {
@@ -392,8 +370,8 @@ public class ECSClient {
         try {
             for (Map.Entry<String, Socket> entry: kvServerSockets.entrySet()) {
                 Socket socket = entry.getValue();
-                sendReceiveMessage(CommandType.LOCK_WRITE, socket);
-                sendReceiveMessage(CommandType.STOP, socket);
+                KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE, socket);
+                KVMessageUtils.sendReceiveMessage(CommandType.STOP, socket);
                 sendMessage(CommandType.SHUT_DOWN, socket);
             }
         } catch (Exception e) {
@@ -457,6 +435,12 @@ public class ECSClient {
 
     public void removeHeartbeatSocket(String hash) {
         heartbeatSockets.remove(hash);
+    }
+
+    public void sendMessage(CommandType commandType, Socket socket) throws Exception {
+        KVMessage message = new KVMessage(commandType)
+                            .setClientType(ClientType.ECS);  
+        KVMessageUtils.sendMessage(message, socket.getOutputStream());
     }
 
     public void runConfig(String fileName){

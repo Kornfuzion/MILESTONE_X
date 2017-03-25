@@ -8,6 +8,7 @@ import datastore.*;
 import logger.*;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -18,6 +19,7 @@ public class ClientHandler implements MessageHandler {
     private static Logger logger = Logger.getLogger(ClientHandler.class.getName());
     private StorageManager storageManager;
     private KVServer server;
+    private static final int COORDINATOR = 1;
 
     public ClientHandler(KVServer server, StorageManager storageManager) {
         this.server = server;
@@ -35,6 +37,20 @@ public class ClientHandler implements MessageHandler {
 
     public String formatServerIdentifier(int serverIdentifier) {
         return "_" + serverIdentifier;
+    }
+
+    private void forwardMessageToReplicas(KVMessage message) {
+        try {
+            // Repurpose the incoming message to forward to replicas
+            message = message.setClientType(ClientType.COORDINATOR);
+            for (Socket socket : server.getReplicaSockets()) {
+                KVMessageUtils.sendMessage(message, socket.getOutputStream());
+                KVMessageUtils.receiveMessage(socket.getInputStream());
+            }
+        } catch (Exception e) {
+            // Please Jesus don't spite me for not handling exceptions properly
+            e.printStackTrace();
+        }
     }
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
@@ -88,8 +104,6 @@ public class ClientHandler implements MessageHandler {
 		// TODO: NEED TO RETURN HERE FOR A REROUTE IMMEDIATELY
         }
 
-        // TODO(James): Change the serverIdentifier based off whether the server is the coordinator,
-        //              the first replica, or the second replica.
         switch (message.getCommand()) {
             case GET:
                 String getValue = "";
@@ -117,6 +131,9 @@ public class ClientHandler implements MessageHandler {
                 if (!reroute) {
                     logger.info("RECEIVED PUT REQUEST");
                     responseStatus = storageManager.set(message.getKey(), message.getValue(), version, formatServerIdentifier(serverIdentifier));
+                    if (serverIdentifier == COORDINATOR) {
+                        //forwardMessageToReplicas(message);
+                    }
                 }
                 response
                     .setKey(message.getKey())
@@ -130,6 +147,9 @@ public class ClientHandler implements MessageHandler {
                 if (!reroute) {
                     logger.info("RECEIVED DELETE REQUEST");
                     responseStatus = storageManager.delete(message.getKey(), version, formatServerIdentifier(serverIdentifier)); 
+                    if (serverIdentifier == COORDINATOR) {
+                        //forwardMessageToReplicas(message);
+                    }
                 }
                 response
                     .setKey(message.getKey())

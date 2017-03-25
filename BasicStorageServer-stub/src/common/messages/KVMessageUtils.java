@@ -91,4 +91,19 @@ public class KVMessageUtils {
         /* build final String */
         return KVMessage.parse(msgBytes);
     }
+
+    public static void sendReceiveMessage(CommandType commandType, Socket socket) throws Exception {
+        sendReceiveMessage(commandType, socket, true);
+    }
+
+    public static void sendReceiveMessage(CommandType commandType, Socket socket, boolean printResponse) throws Exception {
+        KVMessage message = new KVMessage(commandType)
+                            .setClientType(ClientType.ECS);  
+        KVMessageUtils.sendMessage(message, socket.getOutputStream());
+        KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
+        
+        if (printResponse) {
+            System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+        }
+    }
 }

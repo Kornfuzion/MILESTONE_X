@@ -53,6 +53,7 @@ public class RequestConnection implements Runnable {
     
     public void addMessageHandlers() {
         messageHandlers.add(new ClientHandler(server, storageManager));
+        messageHandlers.add(new CoordinatorHandler(server, storageManager));
         messageHandlers.add(new ECSHandler(this, server));
     }
 

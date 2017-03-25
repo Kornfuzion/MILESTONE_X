@@ -36,7 +36,9 @@ public class KVServer extends Thread {
     private boolean running;
     private boolean alive;
     private StorageManager storageManager;
+    private ECSNode serverNode;
     private TreeSet<ECSNode> metadata;
+    private ArrayList<Socket> replicaSockets;
 
     private KVServerStatus status;
 
@@ -58,6 +60,8 @@ public class KVServer extends Thread {
         this.running = false; 
         this.alive = false;
         this.metadata = null;
+        this.serverNode = null;
+        this.replicaSockets = new ArrayList<Socket>();
 
         this.status = new KVServerStatus(port, metadata);
     }
@@ -171,10 +175,47 @@ public class KVServer extends Thread {
         status.readWriteUnlock();
     }
 
+    public ArrayList<Socket> getReplicaSockets() {
+        return this.replicaSockets;
+    }
+
     public void updateMetadata(TreeSet<ECSNode> metadata) {
         this.metadata = metadata;
         status.setMetadata(metadata);
         
+        // Find the ECSNode corresponding to this server,
+        // if we don't yet know it
+        if (this.serverNode == null) {
+            for (ECSNode node : metadata) {
+                if (this.port == Integer.parseInt(node.getPort())) {
+                    this.serverNode = node;
+                    break;
+                }
+            }
+        }
+
+        try {
+            // Close any previous replica sockets, if any
+            for (Socket socket : replicaSockets) {
+                socket.getInputStream().close();
+                socket.getOutputStream().close();
+                socket.close();
+            }
+            replicaSockets.clear();
+
+            // Create new replica sockets
+            ECSNode nextNode = this.serverNode;
+            for (int i = 0; i < 2; i++) {
+                nextNode = this.metadata.higher(nextNode);
+                if (nextNode == null) {
+                    nextNode = this.metadata.first();
+                }
+                replicaSockets.add(new Socket(nextNode.getIP(), Integer.parseInt(nextNode.getPort())));
+            }
+        } catch (Exception e) {
+            // Welp, we dun fukd up fam
+            e.printStackTrace();
+        }
     }
 
     // Return a copy of the metadata, to be safe
