@@ -74,16 +74,17 @@ public class Storage {
     /**
     * Gets the value associated with the given key.
     * @param key The key associated with the desired value.
+    * @param serverIdentifer The idenfifier associated with the server.
     * @return The value associated with the key. Returns null if the key does not exist or an error
     *         occurs reading from disk.
     */
-    public String get(String key) {      
+    public String get(String key, String serverIdentifier) {      
         if (key == null) {
             logger.info("GET: Illegal key <KEY = " + key +">");
             return null;
         }
  
-        String cleanKey = stringToHex(key);
+        String cleanKey = stringToHex(key) + serverIdentifier;
         return getHelper(cleanKey, key);           
     }
 
@@ -170,14 +171,15 @@ public class Storage {
     * Inserts a key-value pair into the cache and persists it onto disk.
     * @param key The key associated with the key-value pair.
     * @param value The value associated with the key-value pair.
+    * @param serverIdentifer The idenfifier associated with the server.
     * @return A {@link StatusType} indicating the status of the insert operation.
     */
-    public StatusType put(String key, String value) {
+    public StatusType put(String key, String value, String serverIdentifier) {
         if ((key == null) || (value == null)) {
             logger.info("PUT: Illegal key/value <KEY = " + key + ", VALUE = " + value + ">");
             return StatusType.PUT_ERROR;
         }
-        String cleanKey = stringToHex(key);
+        String cleanKey = stringToHex(key) + serverIdentifier;
         return putHelper(cleanKey, key, value);
     }
 
@@ -305,14 +307,15 @@ public class Storage {
     /**
     * Deletes the key-value pair specified by the key.
     * @param key The key associated with the key-value pair to be deleted.
+    * @param serverIdentifer The idenfifier associated with the server.
     * @return A {@link StatusType} indicating the status of the delete operation.
     */
-    public StatusType delete(String key) {
+    public StatusType delete(String key, String serverIdentifier) {
         if (key == null) {
             logger.info("DELETE: Illegal key <KEY = " + key +">");
             return StatusType.DELETE_ERROR;
         }
-        String cleanKey = stringToHex(key);
+        String cleanKey = stringToHex(key) + serverIdentifier;
         return deleteHelper(cleanKey, key);   
     }
 

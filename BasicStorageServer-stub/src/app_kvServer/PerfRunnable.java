@@ -23,11 +23,12 @@ public class PerfRunnable implements Runnable{
 		for(String key : this.map.keySet()){
 			String val = this.map.get(key);
 			//do stuff here
-			if(i <= 100) //400 250 100
-				this.storageManager.set(key, val, version);
-			else
-				this.storageManager.get(key, version);
-			i++;		
+			if(i <= 100){ //400 250 100
+				//this.storageManager.set(key, val, version);
+			}else{
+				//this.storageManager.get(key, version);
+			}
+                        i++;		
 		}
 		System.out.println("Done running Thread");
 	}
