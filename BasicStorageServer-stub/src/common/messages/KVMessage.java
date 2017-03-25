@@ -96,7 +96,6 @@ public class KVMessage {
             String serialNode = String.format("%s,%s|", node.getPort(), node.getIP());
             serial = serial + serialNode;
         }
-        System.out.println(serial);
         return serial;
     }
 
