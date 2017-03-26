@@ -180,10 +180,7 @@ public class KVServer extends Thread {
         return this.replicaSockets;
     }
 
-    public void updateMetadata(TreeSet<ECSNode> metadata) {
-        this.metadata = metadata;
-        status.setMetadata(metadata);
-        
+    public void updateReplicaConnections() {
         // Find the ECSNode corresponding to this server,
         // if we don't yet know it
         if (this.serverNode == null) {
@@ -216,6 +213,11 @@ public class KVServer extends Thread {
             e.printStackTrace();
             replicaSockets.clear();
         }
+    }
+
+    public void updateMetadata(TreeSet<ECSNode> metadata) {
+        this.metadata = metadata;
+        status.setMetadata(metadata);
     }
 
     // Return a copy of the metadata, to be safe

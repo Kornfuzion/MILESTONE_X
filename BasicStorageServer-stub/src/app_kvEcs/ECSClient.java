@@ -197,6 +197,9 @@ public class ECSClient {
             // Update all server metadata.
             updateAllMetadata();
 
+            // Update coordinator -> replica connections
+            updateAllReplicaConnections();
+
             // Add node back to available machines.
 			removeNode.setNodeAlive();
             availableMachines.add(removeNode);
@@ -269,6 +272,9 @@ public class ECSClient {
 
             // Unlock successor
             KVMessageUtils.sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+    
+            // Update coordinator -> replica connections
+            updateAllReplicaConnections();
 
             // Start up a heartbeater for this server. If it dies,
             // the thread will execute the appropriate failure handling on callback
@@ -331,12 +337,16 @@ public class ECSClient {
                     return 1;
                 }
             }
+            // Update coordinator -> replica connections
+            updateAllReplicaConnections();
         }catch (IOException e) {
             e.printStackTrace();
             return 1;
         } catch (InterruptedException ie) {
             ie.printStackTrace();
             return 1;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         // Successfully initialized all servers.
@@ -356,6 +366,14 @@ public class ECSClient {
         KVMessageUtils.sendMessage(ringMessage, socket.getOutputStream());
         KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
         System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+    }
+
+    public void updateAllReplicaConnections() throws Exception {
+        // Update metadata of all other servers
+        for (ECSNode serverNode : hashRing) {
+            Socket socket = kvServerSockets.get(serverNode.getHashedValue());
+            KVMessageUtils.sendReceiveMessage(CommandType.UPDATE_REPLICA_CONNECTIONS, socket);
+        }
     }
 
     public void updateAllMetadata() throws Exception {

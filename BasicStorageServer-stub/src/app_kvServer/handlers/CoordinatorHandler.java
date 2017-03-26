@@ -7,7 +7,7 @@ import common.messages.*;
 import datastore.*;
 import logger.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -30,6 +30,13 @@ public class CoordinatorHandler implements MessageHandler {
         }
     }
 
+    public static String getStackTrace(final Throwable throwable) {
+         final StringWriter sw = new StringWriter();
+         final PrintWriter pw = new PrintWriter(sw, true);
+         throwable.printStackTrace(pw);
+         return sw.getBuffer().toString();
+    }
+
     public ClientType getClientType() {
         return this.type;
     }
@@ -39,9 +46,10 @@ public class CoordinatorHandler implements MessageHandler {
     }
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
+        try {
         KVServerStatus serverStatus = server.getServerStatus();
         CommandType command = message.getCommand();
-        KVMessage response = new KVMessage(command);
+        KVMessage response = new KVMessage(command).setMessage("REPLICA SUCCESS");
         StatusType responseStatus = StatusType.ERROR;
         String reply = "WROTE SUCCESSFULLAY";
 
@@ -77,6 +85,9 @@ public class CoordinatorHandler implements MessageHandler {
         switch (command) {
             case PUT:
                 logger.info("RECEIVED PUT REQUEST");
+                if (storageManager == null) {
+                    logger.error("WTF DUDE WHY IS STORAGEMANAGER NULL");
+                }
                 responseStatus = storageManager.set(message.getKey(), message.getValue(), version, formatServerIdentifier(serverIdentifier));
                 response
                     .setKey(message.getKey())
@@ -96,5 +107,10 @@ public class CoordinatorHandler implements MessageHandler {
         }
         logger.info("REPLIED TO " + command + " WITH STATUS " + response.getStatus());
         return response;
+    } catch (Exception e) {
+        logger.error(getStackTrace(e));
     }
+        return null;
+    }
+
 }

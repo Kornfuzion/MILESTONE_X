@@ -50,6 +50,7 @@ public class ClientHandler implements MessageHandler {
     private String forwardMessageToReplicas(KVMessage message) {
         ArrayList<Socket> replicaSockets = server.getReplicaSockets();
         String reply = " replicaSockets count =" + replicaSockets.size();
+        reply = reply + replicaSockets.get(0).isConnected() + replicaSockets.get(1).isConnected();
         KVMessage forwardWrite = new KVMessage(message.getCommand())
                                         .setKey(message.getKey())
                                         .setValue(message.getValue())
