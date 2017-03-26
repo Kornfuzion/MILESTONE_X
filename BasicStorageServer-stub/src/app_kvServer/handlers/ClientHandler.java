@@ -49,8 +49,7 @@ public class ClientHandler implements MessageHandler {
 
     private String forwardMessageToReplicas(KVMessage message) {
         ArrayList<Socket> replicaSockets = server.getReplicaSockets();
-        String reply = " replicaSockets count =" + replicaSockets.size();
-        reply = reply + replicaSockets.get(0).isConnected() + replicaSockets.get(1).isConnected();
+        String reply = "";
         KVMessage forwardWrite = new KVMessage(message.getCommand())
                                         .setKey(message.getKey())
                                         .setValue(message.getValue())
@@ -59,7 +58,7 @@ public class ClientHandler implements MessageHandler {
         try {
             for (Socket socket : replicaSockets) {
                 KVMessageUtils.sendMessage(forwardWrite, socket.getOutputStream());
-                reply = reply + KVMessageUtils.receiveMessage(socket.getInputStream()).getMessage();
+                //reply = reply + KVMessageUtils.receiveMessage(socket.getInputStream()).getMessage();
             }
         } catch (Exception e) {
             // Please Jesus don't spite me for not handling exceptions properly
