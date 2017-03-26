@@ -66,7 +66,7 @@ public class StorageManager {
         serverStatus.metadataReadLock();
         try {
             ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(key), serverStatus.getMetadata()); 
-            if (serverStatus.getPort() != Integer.parseInt(successor.getPort())) {
+            if (!MetadataUtils.isSuccessor(serverStatus.getPort(), successor, serverStatus.getMetadata(), CommandType.GET)) {
                 // Need to reroute the read.
                 TreeSet<ECSNode> metadata = serverStatus.getMetadata();
                 serverStatus.metadataReadUnlock();

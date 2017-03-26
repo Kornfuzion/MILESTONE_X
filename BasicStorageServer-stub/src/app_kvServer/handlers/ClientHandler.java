@@ -132,13 +132,18 @@ public class ClientHandler implements MessageHandler {
                     response = storageManager.get(message.getKey(), version, formatServerIdentifier(serverIdentifier));
                     
                     logger.info("RECEIVED GET REQUEST");
-                }
                 response
                     .setKey(message.getKey())
                     .setMetadata(metadata)
                     .setMessage(reply);
+                } else {
+                    response
+                    .setKey(message.getKey())
+                    .setStatus(responseStatus)
+                    .setMetadata(metadata)
+                    .setMessage(reply);
+                }
                 break;
-            
             case PUT:
                 if (!reroute) {
                     logger.info("RECEIVED PUT REQUEST");
