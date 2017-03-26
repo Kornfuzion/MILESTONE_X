@@ -26,7 +26,24 @@ public class ECSClient {
     private Comparator<ECSNode> comparator; 
     private int totalNumberOfMachines;
     private Process proc;
+
     public static String ROOT_HOST_ADDRESS = "127.0.0.1";
+
+    class HeartbeatManager {
+        boolean beat;
+
+        public HeartbeatManager() {
+            this.beat = true;
+        }
+
+        public synchronized boolean getBeat() {
+            return this.beat;
+        }
+
+        public synchronized void setBeat(boolean beat) {
+            this.beat = beat;
+        }
+    }
 
     class Heartbeater implements Runnable {
 
@@ -34,16 +51,18 @@ public class ECSClient {
         ECSNode server;
         Socket connection;
         static final int heartbeatInterval = 5000;
+        HeartbeatManager beatManager;
 
-        public Heartbeater(ECSClient client, ECSNode server) {
+        public Heartbeater(ECSClient client, ECSNode server, HeartbeatManager beatManager) {
             this.client = client;
             this.server = server;
             this.connection = client.getHeartbeatSocket(this.server.getHashedValue());
+            this.beatManager = beatManager;
         }
 
         public void run() {
             // send heartbeats every X seconds
-            while (true) {
+            while (beatManager.getBeat()) {
                 try {
                     KVMessageUtils.sendReceiveMessage(CommandType.HEARTBEAT, this.connection, false);
                     Thread.sleep(this.heartbeatInterval);
@@ -55,14 +74,19 @@ public class ECSClient {
 
 			this.server.setNodeDead();
             client.removeHeartbeatSocket(server.getHashedValue());
-            client.handleFailure(this.server);
+            // If ECS is still up and checking for heartbeats.
+            if (beatManager.getBeat()) {
+                client.handleFailure(this.server);
+            }
         }
     }
 
     // Holds the communication socket to every KVServer for ECS commands
     private Map<String, Socket> kvServerSockets;
     private Map<String, Socket> heartbeatSockets;
-
+    
+    // Holds heart beat managers.
+    private Map<String, HeartbeatManager> beatManagers;
     public ECSClient(){
         this.comparator = new hashRingComparator();         
         this.hashRing = new TreeSet<ECSNode>(comparator);
@@ -70,6 +94,7 @@ public class ECSClient {
         this.kvServerSockets = new LinkedHashMap<String, Socket>();
         this.heartbeatSockets = new LinkedHashMap<String, Socket>();
         totalNumberOfMachines = 0;
+        this.beatManagers = new LinkedHashMap<String, HeartbeatManager>();
     }
     
     public boolean start(){
@@ -115,8 +140,7 @@ public class ECSClient {
         return true;
     }
 
-    public void handleFailure(ECSNode deadServer) {
-        // TODO: VICTOR KO SMD BISH
+    public synchronized void handleFailure(ECSNode deadServer) {
         System.out.println("HANDLING FAILURE FOR DEAD SERVER "+ deadServer.getPort());
 		//remove from active ring
 		int ind = 0;		
@@ -127,13 +151,12 @@ public class ECSClient {
 			ind++;		
 		}
 		//found index of dead server, call remove Node
-		removeNode(ind);
-		addNode(500, "lru");
-		
-		
+       
+        removeNode(ind);
+		addNode(500, "lru");	
     }
 
-    public boolean removeNode(int serverIndex) {
+    public synchronized boolean removeNode(int serverIndex) {
         if (serverIndex >= hashRing.size()) {
             System.out.println("Index out of range");
             return false;
@@ -151,19 +174,45 @@ public class ECSClient {
             // Should never get here.
             return false;
         }
-        try {
+        beatManagers.get(removeNode.getHashedValue()).setBeat(false);  
+       try {
+            if (!removeNode.getLiveness()) {
+                String hash = removeNode.getHashedValue(); 
+                kvServerSockets.get(hash).close();
+                kvServerSockets.remove(removeNode.getHashedValue());       
+                beatManagers.remove(removeNode.getHashedValue());
+                hashRing.remove(removeNode);
+                try {
+                    updateAllMetadata();
+                } catch (Exception updateException) {
+                    // No big deal, if more than one server goes down then we will end up here.
+                }
+                removeNode.setNodeAlive();
+                availableMachines.add(removeNode);
+                return true;
+            }
+ 
             String hash = removeNode.getHashedValue();
             Socket removeSocket = kvServerSockets.get(hash); 
-            hashRing.remove(removeNode);
             ECSNode successor = MetadataUtils.getSuccessor(hash, hashRing, false);
-            
+            hashRing.remove(removeNode);
+ 
+            if ((removeNode.getPort() == successor.getPort()) && (removeNode.getIP() == successor.getIP())) {
+                successor = null;
+            }
+
 			// Removing the last node (no successor).
 			if (successor == null) {
-				if(removeNode.getLiveness() == true){
+                if(removeNode.getLiveness() == true){
 					KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE, removeSocket);
             		KVMessageUtils.sendReceiveMessage(CommandType.STOP, removeSocket);
             		sendMessage(CommandType.SHUT_DOWN, removeSocket);
-				}
+                }
+                removeNode.setNodeAlive();
+                availableMachines.add(removeNode);
+                kvServerSockets.get(removeNode.getHashedValue()).close();
+                kvServerSockets.remove(removeNode.getHashedValue());
+                beatManagers.remove(removeNode.getHashedValue());
 				return true;
 			}        
 
@@ -188,8 +237,11 @@ public class ECSClient {
             // Shutdown the node to be removed (no need to worry about releasing the write lock)
             // Don't need to wait for a respnse.
 			if(removeNode.getLiveness() == true){
-            	sendMessage(CommandType.SHUT_DOWN, removeSocket);
-			}
+                try {
+                    sendMessage(CommandType.SHUT_DOWN, removeSocket);
+			    } catch (Exception shutdownException) {
+                }
+            }
 
             // Unlock the successor
             KVMessageUtils.sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
@@ -201,7 +253,9 @@ public class ECSClient {
 			removeNode.setNodeAlive();
             availableMachines.add(removeNode);
             // Remove node's socket.
+            kvServerSockets.get(removeNode.getHashedValue()).close();
             kvServerSockets.remove(removeNode.getHashedValue());
+            beatManagers.remove(removeNode.getHashedValue());
         return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -209,7 +263,7 @@ public class ECSClient {
         }
     }
 
-    public boolean addNode(int cacheSize, String cachePolicyString) {
+    public synchronized boolean addNode(int cacheSize, String cachePolicyString) {
         // No more available machines to add.
         if (availableMachines.size() == 0) {
             System.out.println("No more available machines to add");
@@ -240,8 +294,10 @@ public class ECSClient {
 
             Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
             Socket heartbeatSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
+            HeartbeatManager beatManager = new HeartbeatManager();
             kvServerSockets.put(node.getHashedValue(), kvServerSocket); 
-            heartbeatSockets.put(node.getHashedValue(), kvServerSocket); 
+            heartbeatSockets.put(node.getHashedValue(), heartbeatSocket);
+            beatManagers.put(node.getHashedValue(), beatManager); 
             CachePolicy cachePolicy = CachePolicy.parseString(cachePolicyString);
     
             hashRing.add(node);
@@ -255,24 +311,38 @@ public class ECSClient {
             // Start the new server
             KVMessageUtils.sendReceiveMessage(CommandType.START, kvServerSocket);
 
-            // Lock successor
-            KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
+            try {
+                // Lock successor
+                KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE, successorSocket);
 
-            // Move data
-            KVMessageUtils.sendReceiveMessage(CommandType.MOVE_DATA, successorSocket);
+                // Move data
+                KVMessageUtils.sendReceiveMessage(CommandType.MOVE_DATA, successorSocket);
 
-            // Update successor's metadata while under write lock
-            KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE_UPDATE_METADATA, successorSocket);
+                // Update successor's metadata while under write lock
+                KVMessageUtils.sendReceiveMessage(CommandType.LOCK_WRITE_UPDATE_METADATA, successorSocket);
 
-            // Update all server metadata
-            updateAllMetadata();
+                // Update all server metadata
+            } catch (Exception successorException) {
+                // Successor might have also crashed.
+            }
 
-            // Unlock successor
-            KVMessageUtils.sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+            try {
+                updateAllMetadata();
+            } catch (Exception updateException) {
+                // Some servers may have failed which would cause updateAllMetadata to fail.
+            }
+
+            try {
+                // Unlock successor
+                KVMessageUtils.sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+            } catch (Exception successorException) {
+                // Successor might have also crashed.
+            }
 
             // Start up a heartbeater for this server. If it dies,
             // the thread will execute the appropriate failure handling on callback
-            new Thread(new Heartbeater(this, node)).start();
+            new Thread(new Heartbeater(this, node, beatManager)).start(); 
+            beatManager.setBeat(true);
         return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -280,7 +350,7 @@ public class ECSClient {
         }
      }
 
-    public int initKVService(int numberOfNodes, int cacheSize, String replacementStrategy, String configFile){
+    public synchronized int initKVService(int numberOfNodes, int cacheSize, String replacementStrategy, String configFile){
         runConfig(configFile);
         try {
             String script = "./script.sh";
@@ -312,9 +382,11 @@ public class ECSClient {
             for (ECSNode node : hashRing) {
                 Socket kvServerSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
                 Socket heartbeatSocket = new Socket(node.getIP(), Integer.parseInt(node.getPort()));
+                HeartbeatManager beatManager = new HeartbeatManager();
                 kvServerSockets.put(node.getHashedValue(), kvServerSocket);
                 heartbeatSockets.put(node.getHashedValue(), heartbeatSocket);
-                
+                beatManagers.put(node.getHashedValue(), beatManager);
+ 
                 try{
                     setMetadata(CommandType.INIT, 
                                 hashRing, 
@@ -324,7 +396,8 @@ public class ECSClient {
 
                     // Start up a heartbeater for this server, if it dies,
                     // the thread will execute the appropriate failure handling on callback
-                    new Thread(new Heartbeater(this, node)).start();
+                    beatManager.setBeat(true);
+                    new Thread(new Heartbeater(this, node, beatManager)).start();
                 } catch (Exception ge) {
                     System.out.println("Unable to send metadata to server at port " 
                                         + node.getPort() + ". It is most likely being used.");
@@ -429,11 +502,11 @@ public class ECSClient {
         return kvServerSockets.get(hash);
     }
 
-    public Socket getHeartbeatSocket(String hash) {
+    public synchronized Socket getHeartbeatSocket(String hash) {
         return heartbeatSockets.get(hash);
     }
 
-    public void removeHeartbeatSocket(String hash) {
+    public synchronized void removeHeartbeatSocket(String hash) {
         heartbeatSockets.remove(hash);
     }
 
@@ -461,6 +534,12 @@ public class ECSClient {
         } catch (IOException e){
             e.printStackTrace();        
         }   
+    }
+
+    public synchronized void stopBeat() {
+        for (Map.Entry<String, HeartbeatManager> entry: beatManagers.entrySet()) {
+            entry.getValue().setBeat(false);
+        }
     }
 
     /*public static void main(String[] args){

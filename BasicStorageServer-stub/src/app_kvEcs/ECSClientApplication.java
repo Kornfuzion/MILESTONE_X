@@ -149,7 +149,8 @@ public class ECSClientApplication {
 			}	
 		}
         else if(tokens[0].equals("exit")){
-            if (initFlag) {
+            client.stopBeat();
+	    if (initFlag) {
                 client.shutDown();
             }  
             System.exit(1);
