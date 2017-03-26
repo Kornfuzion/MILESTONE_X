@@ -40,7 +40,8 @@ public class CoordinatorHandler implements MessageHandler {
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
         KVServerStatus serverStatus = server.getServerStatus();
-        KVMessage response = new KVMessage(message.getCommand());
+        CommandType command = message.getCommand();
+        KVMessage response = new KVMessage(command);
         StatusType responseStatus = StatusType.ERROR;
         String reply = "";
 
@@ -54,7 +55,7 @@ public class CoordinatorHandler implements MessageHandler {
             responseStatus = StatusType.SERVER_WRITE_LOCK;
             response.setStatus(responseStatus)
                     .setMessage(reply);
-            logger.info("REPLIED TO " + message.getCommand() + " WITH STATUS " + response.getStatus());
+            logger.info("REPLIED TO " + command + " WITH STATUS " + response.getStatus());
             return response;
         }
         // Server is not under write lock, get a version number.
@@ -65,11 +66,15 @@ public class CoordinatorHandler implements MessageHandler {
 		serverStatus.metadataReadLock();
 
         ECSNode successor = MetadataUtils.getSuccessor(MetadataUtils.hash(message.getKey()), server.getMetadata());
-        int serverIdentifier = server.isSuccessor(successor, message.getCommand());
+        int serverIdentifier = MetadataUtils.getServerIdentifier(
+                                    server.getPort(), 
+                                    successor, 
+                                    server.getMetadata(),
+                                    command);
 
 		serverStatus.metadataReadUnlock();
 
-        switch (message.getCommand()) {
+        switch (command) {
             case PUT:
                 logger.info("RECEIVED PUT REQUEST");
                 responseStatus = storageManager.set(message.getKey(), message.getValue(), version, formatServerIdentifier(serverIdentifier));
@@ -89,7 +94,7 @@ public class CoordinatorHandler implements MessageHandler {
                     .setMessage(reply);
             break;
         }
-        logger.info("REPLIED TO " + message.getCommand() + " WITH STATUS " + response.getStatus());
+        logger.info("REPLIED TO " + command + " WITH STATUS " + response.getStatus());
         return response;
     }
 }

@@ -224,28 +224,6 @@ public class KVServer extends Thread {
         return MetadataUtils.copyMetadata(this.metadata);
     }
 
-    // Return:
-    // 0 - not successor
-    // 1 - coordinator
-    // 2 - replica 1
-    // 3 - replica 2
-    public int isSuccessor(ECSNode successor, CommandType command) {
-        if (successor == null) return 1;
-        int successorIndex = -1;
-        int replicaCount = (command == CommandType.GET) ? 3 : 1;
-        for (int i = 0; i < replicaCount; i++) {
-            if (this.port == Integer.parseInt(successor.getPort())) {
-                successorIndex = i;
-                break;
-            }
-            successor = this.metadata.higher(successor);
-            if (successor == null) {
-                successor = this.metadata.first();
-            }
-        }
-        return successorIndex + 1;
-    }
-
     /**
      * Stops the server insofar that it won't listen at the given port any more.
      */
