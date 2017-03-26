@@ -198,8 +198,6 @@ public class KVServer extends Thread {
         try {
             // Close any previous replica sockets, if any
             for (Socket socket : replicaSockets) {
-                socket.getInputStream().close();
-                socket.getOutputStream().close();
                 socket.close();
             }
             replicaSockets.clear();
@@ -216,6 +214,7 @@ public class KVServer extends Thread {
         } catch (Exception e) {
             // Welp, we dun fukd up fam
             e.printStackTrace();
+            replicaSockets.clear();
         }
     }
 
@@ -237,8 +236,7 @@ public class KVServer extends Thread {
     public void initKVServer(TreeSet<ECSNode> metadata, int cacheSize, CachePolicy policy) {
         this.cacheSize = cacheSize;
         this.policy = policy;
-        this.metadata = metadata;
-        status.setMetadata(metadata);
+        updateMetadata(metadata);
 
         for (ECSNode node : metadata) {
             logger.info(node.getPort() + node.getIP() + node.getHashedValue());

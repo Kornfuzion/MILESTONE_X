@@ -43,7 +43,7 @@ public class CoordinatorHandler implements MessageHandler {
         CommandType command = message.getCommand();
         KVMessage response = new KVMessage(command);
         StatusType responseStatus = StatusType.ERROR;
-        String reply = "";
+        String reply = "WROTE SUCCESSFULLAY";
 
         int version = 0;
 		// Checking for if server is write locked.

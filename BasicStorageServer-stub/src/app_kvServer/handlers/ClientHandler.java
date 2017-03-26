@@ -8,6 +8,7 @@ import datastore.*;
 import logger.*;
 
 import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -39,18 +40,32 @@ public class ClientHandler implements MessageHandler {
         return "_" + serverIdentifier;
     }
 
-    private void forwardMessageToReplicas(KVMessage message) {
+    public static String getStackTrace(final Throwable throwable) {
+         final StringWriter sw = new StringWriter();
+         final PrintWriter pw = new PrintWriter(sw, true);
+         throwable.printStackTrace(pw);
+         return sw.getBuffer().toString();
+    }
+
+    private String forwardMessageToReplicas(KVMessage message) {
+        ArrayList<Socket> replicaSockets = server.getReplicaSockets();
+        String reply = " replicaSockets count =" + replicaSockets.size();
+        KVMessage forwardWrite = new KVMessage(message.getCommand())
+                                        .setKey(message.getKey())
+                                        .setValue(message.getValue())
+                                        .setStatus(StatusType.INVALID)
+                                        .setClientType(ClientType.COORDINATOR);
         try {
-            // Repurpose the incoming message to forward to replicas
-            message = message.setClientType(ClientType.COORDINATOR);
-            for (Socket socket : server.getReplicaSockets()) {
-                KVMessageUtils.sendMessage(message, socket.getOutputStream());
-                KVMessageUtils.receiveMessage(socket.getInputStream());
+            for (Socket socket : replicaSockets) {
+                KVMessageUtils.sendMessage(forwardWrite, socket.getOutputStream());
+                reply = reply + KVMessageUtils.receiveMessage(socket.getInputStream()).getMessage();
             }
         } catch (Exception e) {
             // Please Jesus don't spite me for not handling exceptions properly
             e.printStackTrace();
+            reply = reply + getStackTrace(e);
         }
+        return reply;
     }
 
     public KVMessage handleMessage(KVMessage message) throws Exception {
@@ -97,7 +112,7 @@ public class ClientHandler implements MessageHandler {
                                     server.getMetadata(),
                                     command);
         boolean isSuccessor = (command == CommandType.GET && serverIdentifier > 0) ||
-                              (command != CommandType.GET && serverIdentifier == 1);
+                              (command != CommandType.GET && serverIdentifier == COORDINATOR);
         boolean reroute = !isSuccessor || !server.alive();
 		serverStatus.metadataReadUnlock();
 
@@ -128,9 +143,7 @@ public class ClientHandler implements MessageHandler {
                 if (!reroute) {
                     logger.info("RECEIVED PUT REQUEST");
                     responseStatus = storageManager.set(message.getKey(), message.getValue(), version, formatServerIdentifier(serverIdentifier));
-                    if (serverIdentifier == COORDINATOR) {
-                        //forwardMessageToReplicas(message);
-                    }
+                    reply = reply + forwardMessageToReplicas(message);
                 }
                 response
                     .setKey(message.getKey())
@@ -144,9 +157,7 @@ public class ClientHandler implements MessageHandler {
                 if (!reroute) {
                     logger.info("RECEIVED DELETE REQUEST");
                     responseStatus = storageManager.delete(message.getKey(), version, formatServerIdentifier(serverIdentifier)); 
-                    if (serverIdentifier == COORDINATOR) {
-                        //forwardMessageToReplicas(message);
-                    }
+                    reply = reply + forwardMessageToReplicas(message);
                 }
                 response
                     .setKey(message.getKey())

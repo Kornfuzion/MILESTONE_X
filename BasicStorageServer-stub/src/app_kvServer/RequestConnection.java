@@ -76,6 +76,7 @@ public class RequestConnection implements Runnable {
                     for (MessageHandler handler : messageHandlers) {
                         if (receivedMessage.getClientType() == handler.getClientType()) {
                             reply = handler.handleMessage(receivedMessage);
+                            break;
                         }
                     }
                         
