@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.ClassLoader;
+import java.net.Socket;
 
 import junit.framework.TestCase;
 import app_kvEcs.*;
@@ -30,6 +31,7 @@ public class ECSClientTest extends TestCase {
         Thread.sleep(10000);
     }
 	
+    
 	@Test
 	public void testParseConfig(){
 		Exception ex = null;
@@ -64,11 +66,11 @@ public class ECSClientTest extends TestCase {
 		    System.out.println(e);
 		}
         app = new Application(true);
-        KVMessage message =  app.getServerStatus();
+        KVMessage message = app.getServerStatus();
         assertNotNull(message);
         assertTrue(message.getStatus() == StatusType.SERVER_STOPPED);
     }
- 
+
     /**
     Tests if all the storage servers are in the stopped state after
     being stopped
@@ -144,4 +146,141 @@ public class ECSClientTest extends TestCase {
         assertTrue(client.getHashRingSize() == 1);
 	}
 
+ 
+    /**
+    Tests the ECS client method which causes each server to reset their 2 replica sockets
+    */
+    @Test
+    public void testUpdateReplicaSockets() {
+        client.initKVService(3, 100, "FIFO", "./testECSClient2.config");
+        Exception ex = null;
+        try {
+		    Thread.sleep(2000);
+		} catch (InterruptedException e) {
+		    System.out.println(e);
+            ex = e;
+		}
+        assert(ex == null);
+    }
+
+    /**
+    Tests that servers reply accordingly if we send messages as the coordinator to propagate a write
+    */
+    @Test
+    public void testCoordinatorReplicaMessage() {
+        client.initKVService(3, 100, "FIFO", "./testECSClient2.config");
+        Exception ex = null;
+        try {
+		    Thread.sleep(2000);
+		} catch (InterruptedException e) {
+		    System.out.println(e);
+            ex = e;
+		}
+        assert(ex == null);
+
+        KVMessage response = null;
+        try {
+            ECSNode node = client.getHashRing().first();
+            Socket serverSocket = client.getServerSocket(node.getHashedValue());
+            KVMessage message = new KVMessage(CommandType.PUT)
+                                        .setKey("blah")
+                                        .setValue("blah")
+                                        .setClientType(ClientType.COORDINATOR);
+            KVMessageUtils.sendMessage(message, serverSocket.getOutputStream());
+            response = KVMessageUtils.receiveMessage(serverSocket.getInputStream());
+        } catch (Exception e) {
+            ex = e;
+            //e.printStackTrace();
+        }
+        assert(ex == null);
+        assert(response != null && response.getStatus() != StatusType.PUT_ERROR);
+    }
+
+    /**
+    Tests if we can write to only the replica that is the successor of the given hash
+    */
+    @Test
+    public void testWriteReplica() {
+        client.initKVService(3, 100, "FIFO", "./testECSClient2.config");
+        Exception ex = null;
+        try {
+		    Thread.sleep(2000);
+		} catch (InterruptedException e) {
+		    System.out.println(e);
+            ex = e;
+		}
+        assert(ex == null);
+
+        KVMessage response = null;
+        try {
+            ECSNode node = client.getHashRing().first();
+            Socket serverSocket = client.getServerSocket(node.getHashedValue());
+            KVMessage message = new KVMessage(CommandType.PUT)
+                                        .setKey("blah")
+                                        .setValue("blah")
+                                        .setClientType(ClientType.CLIENT);
+            KVMessageUtils.sendMessage(message, serverSocket.getOutputStream());
+            response = KVMessageUtils.receiveMessage(serverSocket.getInputStream());
+        } catch (Exception e) {
+            ex = e;
+            //e.printStackTrace();
+        }
+        assert(ex == null);
+        assert(response != null && response.getStatus() != StatusType.PUT_ERROR);
+    }
+
+        /**
+    Tests if we can read from any of the 3 replicas, since we have 3 servers
+    */
+    @Test
+    public void testReadReplica() {
+        client.initKVService(3, 100, "FIFO", "./testECSClient2.config");
+        Exception ex = null;
+        try {
+		    Thread.sleep(2000);
+		} catch (InterruptedException e) {
+		    System.out.println(e);
+            ex = e;
+		}
+        assert(ex == null);
+
+        KVMessage response = null;
+        try {
+            ECSNode node = client.getHashRing().first();
+            Socket serverSocket = client.getServerSocket(node.getHashedValue());
+            KVMessage message = new KVMessage(CommandType.GET)
+                                        .setKey("blah")
+                                        .setClientType(ClientType.CLIENT);
+            KVMessageUtils.sendMessage(message, serverSocket.getOutputStream());
+            response = KVMessageUtils.receiveMessage(serverSocket.getInputStream());
+        } catch (Exception e) {
+            ex = e;
+            //e.printStackTrace();
+        }
+        assert(ex == null);
+        assert(response != null && response.getStatus() != StatusType.GET_ERROR);
+    }
+
+ /** 
+    Tests if heartbeat thread runs successfully given the time interval
+    */	
+    @Test
+	public void testHeartbeat() throws Exception{
+        client.initKVService(1, 100, "FIFO", "./testECSClient2.config");
+       // Start the storage servers
+        try {
+		    Thread.sleep(2000);
+		} catch (InterruptedException e) {
+		    System.out.println(e);
+		}
+        client.start();
+        ECSClient.Heartbeater heartbeater = client.getHeartbeater(client, client.getHashRing().first(), client.getHeartbeatManager());
+        new Thread(heartbeater).start();
+        try {
+		    Thread.sleep(6000);
+		} catch (InterruptedException e) {
+		    System.out.println(e);
+		}
+        assert(heartbeater.getBeatCount() >= 2);
+	}
 }

@@ -29,7 +29,16 @@ public class ECSClient {
 
     public static String ROOT_HOST_ADDRESS = "127.0.0.1";
 
-    class HeartbeatManager {
+    public HeartbeatManager getHeartbeatManager() {
+        return new HeartbeatManager();
+    }
+
+    public Heartbeater getHeartbeater(ECSClient client, ECSNode server, HeartbeatManager beatManager) {
+        return new Heartbeater(client, server, beatManager);
+    }
+
+    public class HeartbeatManager {
+        
         boolean beat;
 
         public HeartbeatManager() {
@@ -45,12 +54,13 @@ public class ECSClient {
         }
     }
 
-    class Heartbeater implements Runnable {
+    public class Heartbeater implements Runnable {
 
         ECSClient client;
         ECSNode server;
         Socket connection;
-        static final int heartbeatInterval = 5000;
+        static final int heartbeatInterval = 2000;
+        int beatCount;
         HeartbeatManager beatManager;
 
         public Heartbeater(ECSClient client, ECSNode server, HeartbeatManager beatManager) {
@@ -58,13 +68,19 @@ public class ECSClient {
             this.server = server;
             this.connection = client.getHeartbeatSocket(this.server.getHashedValue());
             this.beatManager = beatManager;
+            this.beatCount = 0;
         }
+
+        public int getBeatCount() {
+            return this.beatCount;
+        }   
 
         public void run() {
             // send heartbeats every X seconds
             while (beatManager.getBeat()) {
                 try {
                     KVMessageUtils.sendReceiveMessage(CommandType.HEARTBEAT, this.connection, false);
+                    beatCount++;
                     Thread.sleep(this.heartbeatInterval);
                 } catch (Exception e) {
                     break;

@@ -25,7 +25,6 @@ public class InteractionTest extends TestCase {
 	
 	
 	@Test
-
 	public void testGet() {
 		String key = "fooget";
 		String value = "barget";

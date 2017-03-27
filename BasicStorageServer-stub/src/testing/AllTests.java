@@ -37,6 +37,7 @@ public class AllTests {
         clientSuite.addTestSuite(LfuTest.class);
         clientSuite.addTestSuite(FifoTest.class);
         clientSuite.addTestSuite(StorageManagerTest.class);
+        clientSuite.addTestSuite(MetadataTest.class);
 	    clientSuite.addTestSuite(ECSClientTest.class);
         return clientSuite;
     }
