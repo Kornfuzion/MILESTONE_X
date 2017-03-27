@@ -205,8 +205,9 @@ public class ECSClient {
                 } catch (Exception updateException) {
                     // No big deal, if more than one server goes down then we will end up here.
                 }
-                removeNode.setNodeAlive();
-                availableMachines.add(removeNode);
+                // We are not adding any crashed nodes back to the available nodes.
+                //removeNode.setNodeAlive();
+                //availableMachines.add(removeNode);
                 return true;
             }
  
@@ -361,13 +362,13 @@ public class ECSClient {
             } catch (Exception successorException) {
                 // Successor might have also crashed.
             }
-
-            // Unlock successor
-            KVMessageUtils.sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
-    
+  
             // Update coordinator -> replica connections
-            updateAllReplicaConnections();
-
+            try { 
+	        updateAllReplicaConnections();
+            } catch (Exception successorException) {
+                // any particular replica might have crashed so catch it here...
+            }
             // Start up a heartbeater for this server. If it dies,
             // the thread will execute the appropriate failure handling on callback
             new Thread(new Heartbeater(this, node, beatManager)).start(); 
