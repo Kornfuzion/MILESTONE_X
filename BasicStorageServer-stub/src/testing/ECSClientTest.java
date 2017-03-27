@@ -25,8 +25,9 @@ public class ECSClientTest extends TestCase {
     public void tearDown() throws Exception{
         Process p = Runtime.getRuntime().exec("./killstuff.sh");
 	    p.waitFor();
+	client.stopBeat();
         // Wait for OS to free the socket.
-        Thread.sleep(3000);
+        Thread.sleep(10000);
     }
 	
 	@Test
