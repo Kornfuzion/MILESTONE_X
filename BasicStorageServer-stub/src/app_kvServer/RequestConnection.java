@@ -7,6 +7,7 @@ import handlers.*;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.*;
 import logger.*;
 import java.net.Socket;
 import java.util.*;
@@ -57,6 +58,13 @@ public class RequestConnection implements Runnable {
         messageHandlers.add(new ECSHandler(this, server));
     }
 
+    public static String getStackTrace(final Throwable throwable) {
+         final StringWriter sw = new StringWriter();
+         final PrintWriter pw = new PrintWriter(sw, true);
+         throwable.printStackTrace(pw);
+         return sw.getBuffer().toString();
+    }
+
     /**
      * Initializes and starts the client connection. 
      * Loops until the connection is closed or aborted by the client.
@@ -76,6 +84,7 @@ public class RequestConnection implements Runnable {
                     for (MessageHandler handler : messageHandlers) {
                         if (receivedMessage.getClientType() == handler.getClientType()) {
                             reply = handler.handleMessage(receivedMessage);
+                            break;
                         }
                     }
                         
@@ -87,6 +96,7 @@ public class RequestConnection implements Runnable {
                  * network problems*/   
                 } catch (Exception e) {
                    logger.error("Error! Connection lost!");
+                   logger.error(getStackTrace(e));
 		           //e.printStackTrace();	
                    break;
                 }               

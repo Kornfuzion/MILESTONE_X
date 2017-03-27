@@ -180,10 +180,7 @@ public class KVServer extends Thread {
         return this.replicaSockets;
     }
 
-    public void updateMetadata(TreeSet<ECSNode> metadata) {
-        this.metadata = metadata;
-        status.setMetadata(metadata);
-        
+    public void updateReplicaConnections() {
         // Find the ECSNode corresponding to this server,
         // if we don't yet know it
         if (this.serverNode == null) {
@@ -198,8 +195,6 @@ public class KVServer extends Thread {
         try {
             // Close any previous replica sockets, if any
             for (Socket socket : replicaSockets) {
-                socket.getInputStream().close();
-                socket.getOutputStream().close();
                 socket.close();
             }
             replicaSockets.clear();
@@ -216,34 +211,18 @@ public class KVServer extends Thread {
         } catch (Exception e) {
             // Welp, we dun fukd up fam
             e.printStackTrace();
+            replicaSockets.clear();
         }
+    }
+
+    public void updateMetadata(TreeSet<ECSNode> metadata) {
+        this.metadata = metadata;
+        status.setMetadata(metadata);
     }
 
     // Return a copy of the metadata, to be safe
     public TreeSet<ECSNode> getMetadata() {
         return MetadataUtils.copyMetadata(this.metadata);
-    }
-
-    // Return:
-    // 0 - not successor
-    // 1 - coordinator
-    // 2 - replica 1
-    // 3 - replica 2
-    public int isSuccessor(ECSNode successor, CommandType command) {
-        if (successor == null) return 1;
-        int successorIndex = -1;
-        int replicaCount = (command == CommandType.GET) ? 3 : 1;
-        for (int i = 0; i < replicaCount; i++) {
-            if (this.port == Integer.parseInt(successor.getPort())) {
-                successorIndex = i;
-                break;
-            }
-            successor = this.metadata.higher(successor);
-            if (successor == null) {
-                successor = this.metadata.first();
-            }
-        }
-        return successorIndex + 1;
     }
 
     /**
@@ -259,8 +238,7 @@ public class KVServer extends Thread {
     public void initKVServer(TreeSet<ECSNode> metadata, int cacheSize, CachePolicy policy) {
         this.cacheSize = cacheSize;
         this.policy = policy;
-        this.metadata = metadata;
-        status.setMetadata(metadata);
+        updateMetadata(metadata);
 
         for (ECSNode node : metadata) {
             logger.info(node.getPort() + node.getIP() + node.getHashedValue());

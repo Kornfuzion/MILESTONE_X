@@ -141,19 +141,21 @@ public class ECSClient {
     }
 
     public synchronized void handleFailure(ECSNode deadServer) {
-        System.out.println("HANDLING FAILURE FOR DEAD SERVER "+ deadServer.getPort());
-		//remove from active ring
-		int ind = 0;		
-		for(ECSNode node : hashRing){
-			if(node.getPort() == deadServer.getPort()){
-				break;			
-			}
-			ind++;		
+        // Only handle failure if we didn't purposely removenode 
+        if (kvServerSockets.get(deadServer.getHashedValue()) != null) {
+            System.out.println("HANDLING FAILURE FOR DEAD SERVER "+ deadServer.getPort());
+		    //remove from active ring
+		    int ind = 0;		
+		    for(ECSNode node : hashRing){
+			    if(node.getPort() == deadServer.getPort()){
+				    break;			
+			    }
+			    ind++;		
+		    }
+		    //found index of dead server, call remove Node
+		    removeNode(ind);
+		    addNode(500, "lru");
 		}
-		//found index of dead server, call remove Node
-       
-        removeNode(ind);
-		addNode(500, "lru");	
     }
 
     public synchronized boolean removeNode(int serverIndex) {
@@ -216,6 +218,9 @@ public class ECSClient {
 				return true;
 			}        
 
+            // Remove node's socket.
+            kvServerSockets.remove(removeNode.getHashedValue());
+
             Socket successorSocket = kvServerSockets.get(successor.getHashedValue());                  
             
             // Lock the node to be removed.
@@ -249,12 +254,14 @@ public class ECSClient {
             // Update all server metadata.
             updateAllMetadata();
 
+            // Update coordinator -> replica connections
+            updateAllReplicaConnections();
+
+	    removeSocket.close();
             // Add node back to available machines.
-			removeNode.setNodeAlive();
+	    removeNode.setNodeAlive();
             availableMachines.add(removeNode);
             // Remove node's socket.
-            kvServerSockets.get(removeNode.getHashedValue()).close();
-            kvServerSockets.remove(removeNode.getHashedValue());
             beatManagers.remove(removeNode.getHashedValue());
         return true;
         } catch (Exception e) {
@@ -339,6 +346,12 @@ public class ECSClient {
                 // Successor might have also crashed.
             }
 
+            // Unlock successor
+            KVMessageUtils.sendReceiveMessage(CommandType.UNLOCK_WRITE, successorSocket);
+    
+            // Update coordinator -> replica connections
+            updateAllReplicaConnections();
+
             // Start up a heartbeater for this server. If it dies,
             // the thread will execute the appropriate failure handling on callback
             new Thread(new Heartbeater(this, node, beatManager)).start(); 
@@ -404,12 +417,16 @@ public class ECSClient {
                     return 1;
                 }
             }
+            // Update coordinator -> replica connections
+            updateAllReplicaConnections();
         }catch (IOException e) {
             e.printStackTrace();
             return 1;
         } catch (InterruptedException ie) {
             ie.printStackTrace();
             return 1;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         // Successfully initialized all servers.
@@ -429,6 +446,14 @@ public class ECSClient {
         KVMessageUtils.sendMessage(ringMessage, socket.getOutputStream());
         KVMessage receiveMessage = KVMessageUtils.receiveMessage(socket.getInputStream());
         System.out.println(receiveMessage.getCommand() + " " + receiveMessage.getStatus());
+    }
+
+    public void updateAllReplicaConnections() throws Exception {
+        // Update metadata of all other servers
+        for (ECSNode serverNode : hashRing) {
+            Socket socket = kvServerSockets.get(serverNode.getHashedValue());
+            KVMessageUtils.sendReceiveMessage(CommandType.UPDATE_REPLICA_CONNECTIONS, socket);
+        }
     }
 
     public void updateAllMetadata() throws Exception {
@@ -578,9 +603,5 @@ public class ECSClient {
         
         
         return;         
-    }*/
-    
-
-    
-    
+    }*/    
 }
